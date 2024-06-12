@@ -1,0 +1,63 @@
+
+
+                     SOURCE CODE FOR THE FC CLIPPER
+
+                            as implemented by
+
+                              John Schultz
+
+                                 4/15/90
+
+
+  The Fast Clipper (FC) 2D line clipper algorithm uses line encoding
+as opposed to end point encoding as with the Cohen-Sutherland (CS)
+method, or parametric methods of Liang-Barsky and Cyrus-Beck.  The
+Sobkow-Pospisil-Yang (SPY) paper shows benchmarks where the FC clipper
+is over twice as fast as the CS algorithm. The parametric methods are
+much slower.  The paper has a source code listing in C, which has a few
+errors.  These errors were in the #define statements for clipping to
+screen edges.  A divide and a subtract were left out:
+
+  as published:
+    #define ClipPTop (*Px) = (*Px) + ((*Qx) - (*Px)) * (YTop - (*Py))
+
+  should read:
+    #define ClipPTop (*Px) = (*Px) + ((*Qx) - (*Px)) * (YTop - (*Py)) /
+                                     ((*Qy) - (*Py))
+
+  Once these errors were corrected, the algorithm worked properly.
+At the time I was experimenting with clipping, I was using a Modula-2
+compiler, so my HLL source is in modula-2.  The latest version is in
+68000 assembly, linked to C test code.  
+
+  The original paper on the FC algorithm was published in
+Computers & Graphics Vol. 11, No. 4, pp. 459-467, 1987
+Printed in Great Britain.  The publisher was Pergamon Journals Ltd.
+
+Authors of the paper (and creators of the algorithm):
+
+  Mark S. Sobkow, Paul Pospisil, and Yee-Hong Yang (to whom
+correspondence should be addressed), 
+Department of Computational Science, University of Saskatchewan, Saskatoon,
+Saskatchewan, Canada S7N 0W0.
+
+
+  I never tested my code against any other algorithms, so I'm curious to
+see if it is twice as fast as SC. Please let me know of any further
+optimizations.
+
+
+
+  John
+
+
+
+  Files for FC:
+
+    readme
+    clip.a
+    cliptest.c
+    makefile
+    clip2d.def
+    clip2d.mod
+

@@ -1,0 +1,40 @@
+head	1.1;
+access;
+symbols;
+locks
+	KENH:1.1; strict;
+comment	@# @;
+
+
+1.1
+date	93.04.23.21.55.49;	author KENH;	state Exp;
+branches;
+next	;
+
+
+desc
+@@
+
+
+1.1
+log
+@Initial revision
+@
+text
+@#
+#
+#
+#
+
+
+
+test.exe: test.obj object.lib test.rsc
+	tlink /l /m /s /v c0l+test+test.rsc,test,,object+graphics+cl
+
+test.obj: test.c grace.h test.h
+	bcc -ml -c -v test.c
+
+
+test.rsc: test.rsa grace.h
+	tasm -zi test.rsa,test.rsc
+@

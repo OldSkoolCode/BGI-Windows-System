@@ -1,0 +1,1735 @@
+head	1.2;
+access;
+symbols;
+locks
+	KENH:1.2; strict;
+comment	@; @;
+
+
+1.2
+date	93.05.30.00.13.10;	author KENH;	state Exp;
+branches;
+next	1.1;
+
+1.1
+date	93.04.23.21.07.33;	author KENH;	state Exp;
+branches;
+next	;
+
+
+desc
+@@
+
+
+1.2
+log
+@made mouse clicks work with selectable button on
+window.
+@
+text
+@; $Header: e:/graphic\RCS\window.asm_v 1.1 1993/04/23 21:07:33 KENH Exp KENH $
+
+;{----------------------------------------------------------------------}
+;{	MsDos window library routines					}
+;{	Copyright (C) 1992 Futurescape Productions			}
+;{	written by Kenneth L. Hurley					}
+;{	started	9-1-1992						}
+;{	written with turbo assembler ver 3.1				}
+;{----------------------------------------------------------------------}
+
+; $Log: window.asm_v $
+; Revision 1.1  1993/04/23  21:07:33  KENH
+; Initial revision
+;
+
+		locals
+
+		include window.inc
+
+WINOBJECTSIZE	segment public 'FARDATA'
+
+		Executehead	<"WOSZ", WIN_TITLE_BAR, WinTitleBarSize>
+		Executehead	<"WOSZ", WIN_CLOSE_BM, closeWinBMSize>
+		Executehead	<"WOSZ", WIN_VSCROLL, vScrollSize>
+		Executehead	<"WOSZ", WIN_HSCROLL, hScrollSize>
+		Executehead	<"WOSZ", WIN_SIZE_BM, sizeWinBMSize>
+
+WINOBJECTSIZE	ends
+
+ADDWINOBJECTS	segment public 'FARDATA'
+
+		Executehead	<"AWOB", WIN_TITLE_BAR, WinTitleBarAdd>
+		Executehead	<"AWOB", WIN_CLOSE_BM, closeWinBMAdd>
+		Executehead	<"AWOB", WIN_VSCROLL, vScrollAdd>
+		Executehead	<"AWOB", WIN_HSCROLL, hScrollAdd>
+		Executehead	<"AWOB", WIN_SIZE_BM, sizeWinBMAdd>
+
+ADDWINOBJECTS	ends
+
+INITEND		Segment Public 'FAR_DATA'
+
+;		Executehead	<"GREN",32767,freeWindow>
+
+INITEND		Ends
+
+EVENTHANDLER	Segment	Public 'FAR_DATA'
+
+		Executehead	<"EVHA", 32767, WindowMouseEvent, MOUSEDEVICE>
+		Executehead	<"EVHA", 32767, WindowKeyEvent, KEYBOARDDEVICE>
+
+EVENTHANDLER	Ends
+
+DGROUP		GROUP	_DATA
+
+_DATA		Segment Public 'DATA'
+
+Communique	db	64 dup (?)	; buffer for communique's
+
+_DATA		Ends
+
+windseg		segment public 'FARDATA'
+
+mouseWindowPress dw	?
+lastWinObjectX	dw	?
+lastWinObjectY	dw	?
+lastWinObject	dd	-1
+winHandle	dw	-1
+baseObjects	dd	?
+otherObjects	dd	?
+tWinX		dw	?
+tWinY		dw	?
+tWinW		dw	?
+tWinH		dw	?
+winflags	dw	?
+
+dummystr	db	0
+
+winFocus	dw	?		; handle of window that has focus
+
+windseg		ends
+
+
+wincseg		segment 'CODE'
+
+		assume cs:wincseg,ds:windseg, es:windseg
+
+;{----------------------------------------------------------------------}
+;{	int _makeWindow(int workX, int workY, int workW, int workH,	}
+;{			int flags, void far *wndProc);			}
+;{									}
+;{	'C' callable routine to make a window in memory			}
+;{									}
+;{	parameters:							}
+;{	  workX = work area's x position				}
+;{	  workY = work area's y position				}
+;{	  workW = work area's width					}
+;{	  workH = work area's height					}
+;{	  flags = bit 0 = draw window flag				}
+;{		  bits 1-15 see window object flags			}
+;{	  wndProc = windows procedure to call for events		}
+;{----------------------------------------------------------------------}
+_makeWindow	Proc	C Far
+
+		arg	workX:word, workY:word, workW:word, workH:word
+		arg	argwinFlags:word, argWinProc:dword
+
+		uses	si,di,ds,es
+
+		mov	ax,workX
+		mov	bx,workY
+		mov	cx,workW		; get parameters
+		mov	dx,workH
+		mov	si,argwinFlags
+		les	di,argWinProc
+
+		call	far ptr makeWindow
+		ret
+
+_makeWindow	Endp
+
+;{----------------------------------------------------------------------}
+;{	makeWindow:							}
+;{	  make window from x,y,w,h and flags				}
+;{									}
+;{	parameters:							}
+;{	  ax = x position of work area					}
+;{	  bx = y position of work area					}
+;{	  cx = width of work area					}
+;{	  dx = height of work area					}
+;{	  si = bit 0 = draw window or not				}
+;{	       bit 1-15 = flags for objects on window			}
+;{	  es:di = procedure for window events				}
+;{----------------------------------------------------------------------}
+makeWindow	Proc	far
+
+		push	bp
+		push	si
+		push	di
+		push	ds
+		push	es
+
+
+		mov	bp,seg tWinX
+		mov	ds,bp
+
+		cmp	dx,MINWINDOWHEIGHT
+		jge	@@@@WinSizeOk
+		mov	dx,MINWINDOWHEIGHT
+@@@@WinSizeOk:
+		mov	tWinX,ax
+		mov	tWinY,bx		; save x,y,w,h
+		mov	tWinW,cx
+		mov	tWinH,dx
+
+		mov	winflags,si
+		mov	ax,si			; bits in ax
+		call	near ptr getWindowMem
+		or	bx,bx
+		jne	@@@@WinAllocedOK
+		jmp	@@@@makeWindowExit
+@@@@WinAllocedOK:
+		mov	bp,es			; save procedure pointer
+		mov	es,bx
+		xor	si,si
+
+		mov	word ptr es:[si].winProcPtr,di
+		mov	word ptr es:[si].winProcPtr+2,bp
+
+		cmp	winHandle,-1		; first window alloced?
+		je	@@@@FirstWinAlloced
+		mov	ax,winHandle		; this window has focus
+		mov	es,ax			; get to segment
+		mov	es:[si].winNext,bx	; set one lower than current
+		mov	es,bx			; get current alloced
+		mov	es:[si].winPrevious,ax	; set previous to last window
+		jmp	@@@@NotFirstWinAlloced	; and bypass is first window
+@@@@FirstWinAlloced:
+		mov	es:[di].winPrevious,-1
+@@@@NotFirstWinAlloced:
+		mov	es:[di].winNext,-1	; set next window to null
+		mov	winHandle,es		; this window has focus
+
+		mov	es:[di].winOffset,dx	; save true malloced offset
+
+		mov	di,size winHeader	; bypass header information
+
+		mov	es:[di],ax		; save number of object structures
+		add	di,2			; bypass number
+
+		fartohuge di,es			; make huge pointer
+
+		mov	word ptr baseObjects,di
+		mov	word ptr baseObjects+2,es
+
+		mov	cx,size object
+		mul	cx
+		mov	cx,ax			; save low bits
+		longtopara dx,ax		; convert to paragraph offset
+
+		mov	dx,es
+		add	dx,ax
+
+		and	cx,0fh
+		add	di,cx			; and new offset
+
+		mov	word ptr otherObjects,di
+		mov	word ptr otherObjects+2,dx
+
+		mov	ax,tWinX
+		mov	bx,tWinY
+		mov	cx,tWinW
+		mov	dx,tWinH
+
+		call	far ptr winRectAdd
+		mov	tWinX,ax
+		mov	tWinY,bx
+		mov	tWinW,cx
+		mov	tWinH,dx
+		mov	dx,winflags		; recover bits
+
+		mov	si,seg ADDWINOBJECTS
+		mov	es,si
+		xor	si,si
+		
+		mov	bx,WIN_TITLE_BAR	; initial test value
+@@@@WinObjectLoop:
+		test	bx,dx			; want this object in window?
+		je	@@@@WinNextObject
+		cmp	word ptr es:[si], 'WA'	; make sure id = 'AWOB'
+		jne	@@@@WinNextObject
+		cmp	word ptr es:[si+2],'BO'
+		jne	@@@@WinNextObject
+
+		push	bx
+		push	dx
+		mov	ax,tWinX
+		mov	bx,tWinY		; get x,y,w,h
+		mov	cx,tWinW
+		mov	dx,tWinH
+		call	dword ptr es:[si].routine
+		mov	tWinX,ax
+		mov	tWinY,bx		; save x,y,w,h
+		mov	tWinW,cx
+		mov	tWinH,dx
+		pop	dx
+		pop	bx
+
+@@@@WinNextObject:
+		add	si,size Executehead
+		shl	bx,1
+		jnc	@@@@WinObjectLoop
+
+		mov	si,dx
+		mov	es,winHandle		; get segment of window memory
+		xor	di,di
+		mov	ax,tWinX
+		mov	es:[di].winX,ax
+		mov	bx,tWinY
+		mov	es:[di].winY,bx
+		mov	cx,tWinW
+		mov	es:[di].winW,cx
+		mov	dx,tWinH
+		mov	es:[di].winH,dx
+		mov	es:[di].winID,'W'
+		mov	es:[di].winID+1,'I'
+		mov	es:[di].winID+2,'N'
+		mov	es:[di].winID+3,'D'
+		
+		test	si,1
+		je	@@@@DontDrawWindow
+
+		call	far ptr hideMouse
+		mov	cx,es
+		mov	dx,size winHeader
+		call	far ptr drawObjects
+		call	far ptr showMouse
+@@@@DontDrawWindow:
+		mov	ax,winHandle
+@@@@makeWindowExit:
+		pop	es
+		pop	ds
+		pop	di
+		pop	si
+		pop	bp
+		
+		ret
+
+makeWindow	Endp
+
+;{----------------------------------------------------------------------}
+;{ Function:	_DefWindProc(int msgBits);				}
+;{ Description:	Come here when a window receives a message and does	}
+;{		nothing with it						}
+;{ Parameters:	msgBits = high byte = device #				}
+;{			  low byte = bits for device			}
+;{----------------------------------------------------------------------}
+_DefWindProc	Proc C	Far
+
+		arg	msgBits:word
+
+		mov	ax,msgBits
+		push	cs
+		call	near ptr DefWindProc
+		ret
+
+_DefWindProc	Endp
+
+
+;{----------------------------------------------------------------------}
+;{ Function:	DefWindProc						}
+;{ Description:	Come here when a window receives a message and does	}
+;{		nothing with it						}
+;{ Parameters:	ah = device #						}
+;{		al = bits for device					}
+;{----------------------------------------------------------------------}
+DefWindProc	Proc	far
+
+		xor	ax,ax
+		ret
+
+DefWindProc	Endp
+
+;{----------------------------------------------------------------------}
+;{ Function:	deselLastWinObject					}
+;{ Description:	deselect the last window object selected		}
+;{ Parameters:	.							}
+;{ Returns:	.							}
+;{----------------------------------------------------------------------}
+deselLastWinObject Proc	far
+
+		mov	si,seg lastWinObject
+		mov	ds,si
+		les	si,lastWinObject	; get last object pointer
+		mov	bp,es:[si].objID	; and id for object
+		xor	ax,ax			; no last object
+		cmp	word ptr lastWinObject,-1
+		jne	@@@@LastObjectAvail
+		cmp	word ptr lastWinObject+2,-1
+		je	@@@@NoObjectFound		; nope
+@@@@LastObjectAvail:
+		assume	es:NOTHING
+		mov	ax,seg tMsgQueue
+		mov	es,ax
+		mov	di,offset tMsgQueue	; pointer to temp msg queue
+		cmp	MouseWindowPress,FALSE	; see if mouse released
+		je	@@@@MouseRelease		; yes, then deselect last object
+		xor	ax,ax
+		cmp	dx,word ptr lastWinObject
+		jne	@@@@MouseRelease		; still in last object?
+		cmp	cx,word ptr lastWinObject+2
+		je	@@@@NoObjectFound
+@@@@MouseRelease:
+		mov	ah,OBJECTDEVICE		; deselect last object selected
+		mov	al,OBJDESELECT
+		stosw
+		mov	ax,lastWinObjectX	; send object X
+		stosw
+		mov	ax,lastWinObjectY	; and Y
+		stosw
+		mov	dx,word ptr lastWinObject
+		mov	ax,dx
+		stosw				; and pointer to object
+		mov	cx,word ptr lastWinObject+2
+		mov	ax,cx
+		stosw
+		mov	di,offset tMsgQueue	; pointer to temp msg queue
+		mov	ah,OBJECTDEVICE		; deselect last object selected
+		mov	al,OBJDESELECT
+		cmp	es:tMsgQueue,ax
+		jne	@@@@Error1
+		mov	ax,lastWinObjectX
+		cmp	es:tMsgQueue+2,ax
+		jne	@@@@Error1
+		mov	ax,lastWinObjectY
+		cmp	es:tMsgQueue+4,ax
+		jne	@@@@Error1
+		cmp	es:tMsgQueue+6,dx
+		jne	@@@@Error1
+		cmp	es:tMsgQueue+8,cx
+		je	@@@@NoError1
+		assume	es:windseg
+@@@@Error1:
+		nop
+		nop
+@@@@NoError1:
+
+		mov	ax,5
+		call	far ptr addMsgBuff
+		mov	word ptr lastWinObject,-1
+		mov	word ptr lastWinObject+2,-1
+		mov	ax,1
+@@@@NoObjectFound:
+		ret
+
+deselLastWinObject Endp
+
+
+;{----------------------------------------------------------------------}
+;{ Function:	WindowPress						}
+;{ Description:	select window item and send object redraw 		}
+;{ Parameters:	ax = x position						}
+;{		bx = y position						}
+;{		cx:dx = object pointer					}
+;{ Returns:	.							}
+;{----------------------------------------------------------------------}
+WindowPress	Proc	far
+
+		push	ax
+		push	bx
+		push	cx
+		push	dx
+		call	far ptr deselLastWinObject
+		pop	dx
+		pop	cx
+		pop	bx
+		pop	ax
+		mov	lastWinObjectX,ax
+		mov	lastWinObjectY,bx
+		cmp	dx,word ptr lastWinObject
+		jne	@@@@NewObject
+		cmp	cx,word ptr lastWinObject+2
+		je	@@@@NotWindowPress
+@@@@NewObject:
+		assume	es:NOTHING
+		mov	word ptr lastWinObject,dx
+		mov	word ptr lastWinObject+2,cx
+		mov	bp,ax
+		mov	ax,seg tMsgQueue
+		mov	es,ax
+		mov	di,offset tMsgQueue	; send message to select object
+		mov	ah,OBJECTDEVICE
+		mov	al,OBJSELECT
+		stosw
+		mov	ax,bp			; send x
+		stosw
+		mov	ax,bx			; and y
+		stosw
+		mov	ax,dx
+		stosw
+		mov	ax,cx
+		stosw
+		mov	ax,5
+		call	far ptr addMsgBuff
+		mov	di,offset tMsgQueue
+		mov	ds,cx
+		mov	si,dx
+		mov	bp,[si].objID
+		mov	ah,WINDOWDEVICE
+		mov	al,WINDOWITEMPRESS	; send object pressed/released
+		stosw
+		mov	ax,bp
+		stosw
+		mov	ax,2
+		call	far ptr addMsgBuff
+		assume	es:windseg
+@@@@NotWindowPress:
+		ret
+
+WindowPress	Endp
+
+;{----------------------------------------------------------------------}
+;{ Function:	WindowMouseEvent					}
+;{ Description:	Come here when a mouse event occurs and send to window	}
+;{		that has focus or window mouse is over			}
+;{ Parameters:	ah = device #						}
+;{		al = bits for device					}
+;{----------------------------------------------------------------------}
+WindowMouseEvent Proc	Far
+
+		pushall
+		mov	cx,seg winHandle
+		mov	ds,cx
+		cmp	winHandle,-1
+		jne	@@@@WinAvailable
+		jmp	@@@@ExitWindow
+@@@@WinAvailable:
+		cmp	ah,MOUSEDEVICE		; mouse device event?
+		je	@@@@IsMouseEvent
+		jmp	@@@@NotMouseEvent
+@@@@IsMouseEvent:
+		cmp	al,MBUTTON1PRESS	; button pressed?
+		jne	@@@@NotMouseDown
+		mov	MouseWindowPress,TRUE	; then set flag
+@@@@NotMouseDown:
+		cmp	al,MBUTTON1RELEASE	; button released?
+		jne	@@@@NotMouseUp
+		mov	MouseWindowPress,FALSE	; then reset flag
+@@@@NotMouseUp:
+		push	ax
+		push	ds
+		mov	ax,winHandle
+		mov	es,ax
+		xor	di,di
+		mov	ax,es:[di].WinX		; get x & y of window
+		mov	bx,es:[di].WinY
+		mov	cx,es			; and pointer
+		mov	dx,size winHeader
+		assume	ds:DGROUP
+		mov	si,seg DGROUP
+		mov	ds,si
+		mov	bp,_mouseX		; get mouse x & y
+		mov	si,_mouseY
+		mov	di,OBJ_SELECTABLE
+		pop	ds
+		assume	ds:windseg
+		call	far ptr ptInObject	; see if mouse points to object
+		pop	bp			; recover device bits
+		and	bp,0ffh
+@@@@ObjectFound:
+		cmp	MouseWindowPress,TRUE	; see if mouse pressed
+		jne	@@@@NotWindowPress	; nope
+		cmp	cx,-1
+		jne	@@@@WindowPress
+		cmp	dx,-1
+		je	@@@@NotWindowPress	; is mouse over selectable item
+@@@@WindowPress:
+		call	far ptr WindowPress
+		jmp	@@@@ExitWindow
+@@@@NotWindowPress:
+		call	far ptr deselLastWinObject ; deselect last object if not same
+		or	ax,ax
+		je	@@@@NoObjectFound
+@@@@MouseInObject:
+		cmp	MouseWindowPress,TRUE
+		je	@@@@NoObjectFound
+		cmp	cx,-1
+		jne	@@@@ObjectRelease
+		cmp	dx,-1
+		je	@@@@NoObjectFound
+@@@@ObjectRelease:
+		assume	es:NOTHING
+		mov	di,seg tMsgQueue
+		mov	es,di
+		mov	di,offset tMsgQueue
+		mov	ah,WINDOWDEVICE
+		mov	al,WINDOWITEMRELEASE	; send object pressed/released
+		stosw
+		mov	ax,bp
+		stosw
+		mov	ax,2
+		call	far ptr addMsgBuff
+		assume	es:windseg
+@@@@NoObjectFound:
+
+@@@@ExitWindow:
+@@@@NotMouseEvent:
+		xor	ax,ax
+		popall
+		ret
+
+WindowMouseEvent Endp
+
+;{----------------------------------------------------------------------}
+;{ Function:	WindowKeyEvent						}
+;{ Description:	Come here when a Key event occurs and send to window	}
+;{		that has focus						}
+;{ Parameters:	ah = device #						}
+;{		al = bits for device					}
+;{----------------------------------------------------------------------}
+WindowKeyEvent Proc	Far
+
+		pushall
+		mov	bx,seg winHandle
+		mov	ds,bx
+		cmp	al,KEYBOARDPRESS	; keyboard press?
+		jne	@@@@NotKeyPress
+		cmp	winHandle,-1		; first window alloced?
+		je	@@@@NotMyEvent
+		mov	ax,WINDOW_KEY_PRESS
+		push	ax			; in case from 'C' code
+		mov	es,winHandle		; get window with focus
+		xor	di,di
+		call	es:[di].winProcPtr	; call window procedure
+		pop	cx
+		mov	cx,ax
+		mov	ah,INPSTAT		; see if convert to code
+		int	MSDOS
+		cmp	al,0ffh	
+		jne	@@@@NotMyEvent
+		mov	ah,UNFCHRIN
+		int	MsDos
+		and	ax,0ffh
+		jne	@@@@NotMultiKey
+		mov	ah,UNFCHRIN
+		int	MsDos
+		mov	ah,al
+		xor	al,al
+@@@@NotMultiKey:
+		or	cx,cx
+		jne	@@@@winKeyExit		; kill event
+		assume	ds:DGROUP
+		mov	cx,seg DGROUP
+		mov	word ptr Communique,ax	; send communique
+		assume	ds:windseg
+		mov	ax,WINDOW_COOKED_KEY
+		push	ax			; in case 'C' code
+		call	es:[di].winProcPtr
+		pop	cx
+		jmp	@@@@winKeyExit
+@@@@NotKeyPress:
+		cmp	al,KEYBOARDRELEASE
+		jne	@@@@notMyEvent
+		cmp	winHandle,-1		; first window alloced?
+		je	@@@@NotMyEvent
+		mov	ax,WINDOW_KEY_RELEASE
+		push	ax			; in case from 'C' code
+		mov	es,winHandle		; get window with focus
+		xor	di,di
+		call	es:[di].winProcPtr	; call window procedure
+		pop	cx
+		jmp	@@@@winKeyExit
+@@@@notMyEvent:
+		xor	ax,ax
+@@@@winKeyExit:
+		popall
+		ret
+
+WindowKeyEvent Endp
+
+;{----------------------------------------------------------------------}
+;{	addObjectRectS:							}
+;{	  add object Rectangle structure				}
+;{									}
+;{	parameters:							}
+;{	  cx = width							}
+;{	  dx = height							}
+;{	  bp = rectangle color						}
+;{	  es:di = uninitialize data pointer				}
+;{	  es:si = offset for child object of this tree			}
+;{----------------------------------------------------------------------}
+addObjectRectS	Proc	Near
+
+		mov	es:[di].objW,cx
+		mov	es:[di].objH,dx
+		mov	es:[di].objtype,OBJ_RECT
+		mov	es:[di].objflags,0
+		mov	word ptr es:[di].objptr,si
+		mov	word ptr es:[di].objptr+2,es
+
+		add	di,size object
+
+		mov	es:[si].rectflags,0
+		mov	es:[si].rectcol,0
+		mov	es:[si].rectDrawMode,REPLACE_MODE
+		add	si,size objRect
+
+		ret
+
+addObjectRectS	Endp
+
+;{----------------------------------------------------------------------}
+;{	addObjectBarS:							}
+;{	  add object Bar structure					}
+;{									}
+;{	parameters:							}
+;{	  cx = width							}
+;{	  dx = height							}
+;{	  bp = fillpattern/fillcolor					}
+;{	  es:di = uninitialize data pointer				}
+;{	  es:si = offset for child object of this tree			}
+;{----------------------------------------------------------------------}
+addObjectBarS	Proc	Near
+
+		mov	es:[di].objW,cx
+		mov	es:[di].objH,dx
+		mov	es:[di].objType,OBJ_BAR
+		mov	es:[di].objFlags,0
+		mov	word ptr es:[di].objptr,si
+		mov	word ptr es:[di].objptr+2,es
+
+		add	di,size object
+
+		push	ax
+		mov	ax,bp
+		mov	es:[si].barflags,0
+		mov	es:[si].barcol,al
+		mov	es:[si].fillpattNum,ah
+		mov	es:[si].bardrawMode,REPLACE_MODE
+		pop	ax
+		mov	es:[si].bardrawMode,0
+		mov	word ptr es:[si].fillpattPtr,0
+		mov	word ptr es:[si].fillpattPtr+2,0
+
+		add	si,size objBar
+
+		ret
+
+addObjectBarS	Endp
+
+;{----------------------------------------------------------------------}
+;{	addObjectStringS:						}
+;{	  add object string structure					}
+;{									}
+;{	parameters:							}
+;{	  es:di = uninitialize data pointer				}
+;{	  es:si = offset for child object of this tree			}
+;{----------------------------------------------------------------------}
+addObjectStringS Proc	Near
+
+		mov	es:[di].objtype,OBJ_STR
+		mov	es:[di].objflags,0
+		mov	word ptr es:[di].objptr,si
+		mov	word ptr es:[di].objptr+2,es
+
+		add	di,size object
+
+		mov	es:[si].strflags,0
+		mov	es:[si].strcol,0
+		mov	es:[si].strdiscol,8
+		mov	es:[si].strselcol,7
+		mov	es:[si].strdrawMode,XPARENT_MODE
+		mov	bp,offset dummystr
+		mov	word ptr es:[si].strptr,bp
+		mov	bp,seg dummystr
+		mov	word ptr es:[si].strptr+2,bp
+
+		add	si,size objStr
+
+		ret
+
+addObjectStringS Endp
+
+;{----------------------------------------------------------------------}
+;{	addObjectBMS:							}
+;{	  add object bitmap structure					}
+;{									}
+;{	parameters:							}
+;{	  ax = x position						}
+;{	  bx = y position						}
+;{	  cx = flags for bitmap						}
+;{	  bp = internal bitmap offset					}
+;{	  es:di = uninitialize data pointer				}
+;{----------------------------------------------------------------------}
+addObjectBMS	Proc	Near
+
+		push	si
+		mov	es:[di].objtype,OBJ_BITMAP
+		mov	es:[di].objflags,cx
+		mov	si,offset InternalBitmaps
+		add	si,bp
+		mov	word ptr es:[di].objptr,si
+		mov	si,seg InternalBitmaps
+		mov	word ptr es:[di].objptr+2,si
+		pop	si
+		add	di,size object
+
+		ret
+
+addObjectBMS	Endp
+
+;{----------------------------------------------------------------------}
+;{	addObjectLineS:							}
+;{	  add object Line structure					}
+;{									}
+;{	parameters:							}
+;{	  ax = x1 position						}
+;{	  bx = y1 position						}
+;{	  cx = x2 position						}
+;{	  dx = y2 position						}
+;{	  bp = internal bitmap offset					}
+;{	  es:di = uninitialize data pointer				}
+;{----------------------------------------------------------------------}
+addObjectLineS	Proc	Near
+
+		mov	es:[di].objtype,OBJ_LINE
+		mov	es:[di].objW,cx
+		mov	es:[di].objH,dx
+		mov	es:[di].objflags,0
+		mov	word ptr es:[di].objptr,si
+		mov	word ptr es:[di].objptr+2,es
+		add	di,size object
+
+		push	ax
+		mov	ax,bp
+		mov	es:[si].linecolor,al
+		mov	es:[si].linePattNum,ah
+		mov	es:[si].linedrawMode,REPLACE_MODE
+		pop	ax
+
+		add	si,size objLine
+
+		ret
+
+addObjectLineS	Endp
+
+;{----------------------------------------------------------------------}
+;{	winRectAdd:							}
+;{	  add object structures for windows work area rectangle		}
+;{									}
+;{	parameters:							}
+;{	  ax = x position						}
+;{	  bx = y position						}
+;{	  cx = width of work area					}
+;{	  dx = height of work area					}
+;{	  baseObjects = pointer to object structures for window		}
+;{	  otherObjects = pointer to other parent object structures	}
+;{----------------------------------------------------------------------}
+winRectAdd	Proc	far
+
+		push	bp
+		push	si
+		push	di
+		push	ds
+		push	es
+
+		mov	si,seg baseObjects
+		mov	ds,si
+
+		les	di,baseObjects
+
+		dec	ax
+		dec	bx
+		add	cx,2
+		add	dx,2
+		xor	bp,bp
+		test	winflags,WIN_TITLE_BAR
+		je	@@@@NoTitleBar
+		mov	bp,11
+@@@@NoTitleBar:
+		mov	es:[di].objX,0
+		mov	es:[di].objY,bp
+		mov	es:[di].objW,cx
+		mov	es:[di].objH,dx
+		mov	es:[di].objtype,OBJ_PARENT
+		mov	es:[di].objflags,0
+		mov	bp,word ptr otherObjects
+		mov	word ptr es:[di].objptr,bp
+		mov	si,word ptr otherObjects+2
+		mov	word ptr es:[di].objptr+2,si
+
+		add	di,size object
+
+		fartohuge di,es
+
+		mov	word ptr baseObjects,di
+		mov	word ptr baseObjects+2,es
+
+		mov	es,si
+		mov	di,bp			; set pointer to other objects
+
+		mov	word ptr es:[di],2	; 2 initial objects
+		add	di,2
+
+		mov	si,di
+		add	si,(2*size object)
+
+		mov	es:[di].objX,0
+		mov	es:[di].objY,0
+		xor	bp,bp
+		call	near ptr addObjectRectS
+
+		mov	es:[di].objX,1
+		mov	es:[di].objY,1
+		push	cx
+		push	dx
+		push	ds
+		sub	cx,2
+		sub	dx,2
+		assume	ds:DGROUP
+		mov	bp,seg DGROUP
+		mov	ds,bp
+		mov	bp,word ptr backcolor
+		assume	ds:windseg
+		and	bp,0ffh
+		or	bp,100h
+		call	near ptr addObjectBarS
+		pop	ds
+		pop	dx
+		pop	cx
+
+		fartohuge si,es
+
+		mov	word ptr otherObjects,si
+		mov	word ptr otherObjects+2,es
+
+		pop	es
+		pop	ds
+		pop	di
+		pop	si
+		pop	bp
+		ret
+
+winRectAdd	Endp
+
+
+;{----------------------------------------------------------------------}
+;{	WinTitleBarAdd:							}
+;{	  add object structures for windows Title Bar rectangle		}
+;{									}
+;{	parameters:							}
+;{	  ax = x position						}
+;{	  bx = y position						}
+;{	  cx = width of work area					}
+;{	  dx = height of work area					}
+;{	  baseObjects = pointer to object structures for window		}
+;{	  otherObjects = pointer to other parent object structures	}
+;{----------------------------------------------------------------------}
+WinTitleBarAdd	Proc	Far
+
+		push	cx
+		push	bp
+		push	si
+		push	di
+		push	ds
+		push	es
+
+		mov	si,seg baseObjects
+		mov	ds,si
+
+		les	di,baseObjects
+
+		sub	bx,11
+		add	dx,12
+		test	winflags,WIN_VSCROLL
+		jne	@@@@HasVScroll
+		sub	cx,12
+@@@@HasVScroll:
+		mov	es:[di].objX,0
+		mov	es:[di].objY,0
+		mov	es:[di].objW,cx
+		mov	es:[di].objH,12
+		mov	es:[di].objtype,OBJ_PARENT
+		mov	es:[di].objflags,0
+		mov	bp,word ptr otherObjects
+		mov	word ptr es:[di].objptr,bp
+		mov	si,word ptr otherObjects+2
+		mov	word ptr es:[di].objptr+2,si
+
+		add	di,size object
+
+		fartohuge di,es
+
+		mov	word ptr baseObjects,di
+		mov	word ptr baseObjects+2,es
+
+		mov	es,si
+		mov	di,bp			; set pointer to other objects
+
+		mov	word ptr es:[di],7	; 2 initial objects
+		add	di,2
+
+		mov	si,di
+		add	si,(7*size object)
+
+		push	cx
+		push	dx
+		mov	es:[di].objX,0
+		mov	es:[di].objY,0
+		mov	dx,12
+		call	near ptr addObjectRectS
+
+		push	cx
+		push	dx
+		mov	es:[di].objX,1
+		mov	es:[di].objY,1
+		mov	dx,1
+		sub	cx,3
+		mov	bp,000fh
+		call	near ptr addObjectLineS
+		pop	dx
+		pop	cx
+
+		push	cx
+		push	dx
+		mov	es:[di].objX,1
+		mov	es:[di].objY,2
+		mov	cx,1
+		sub	dx,2
+		mov	bp,000fh
+		call	near ptr addObjectLineS
+		pop	dx
+		pop	cx
+
+		push	cx
+		push	dx
+		mov	bp,cx
+		sub	bp,2
+		mov	es:[di].objX,bp
+		mov	es:[di].objY,1
+		mov	cx,bp
+		sub	dx,2
+		mov	bp,0008h
+		call	near ptr addObjectLineS
+		pop	dx
+		pop	cx
+
+		push	cx
+		push	dx
+		mov	bp,dx
+		sub	bp,2
+		mov	es:[di].objX,2
+		mov	es:[di].objY,bp
+		mov	dx,bp
+		sub	cx,3
+		mov	bp,0008h
+		call	near ptr addObjectLineS
+		pop	dx
+		pop	cx
+
+
+		mov	es:[di].objX,2
+		mov	es:[di].objY,2
+		mov	dx,8
+		sub	cx,4
+		mov	bp,0107h
+		call	near ptr addObjectBarS
+		pop	dx
+		pop	cx
+
+		mov	es:[di].objX,4
+		mov	es:[di].objY,4
+		call	near ptr addObjectStringS
+
+		fartohuge si,es
+
+		mov	word ptr otherObjects,si
+		mov	word ptr otherObjects+2,es
+
+		pop	es
+		pop	ds
+		pop	di
+		pop	si
+		pop	bp
+		pop	cx
+		ret
+
+WinTitleBarAdd	Endp
+
+;{----------------------------------------------------------------------}
+;{	closeWinBMAdd:							}
+;{	  add object structures for close window bitmap			}
+;{									}
+;{	parameters:							}
+;{	  ax = x position						}
+;{	  bx = y position						}
+;{	  cx = width of work area					}
+;{	  dx = height of work area					}
+;{	  baseObjects = pointer to object structures for window		}
+;{	  otherObjects = pointer to other parent object structures	}
+;{----------------------------------------------------------------------}
+closeWinBMAdd	Proc	Far
+
+
+		push	cx
+		push	bp
+		push	si
+		push	di
+		push	ds
+		push	es
+
+		mov	si,seg baseObjects
+		mov	ds,si
+
+		les	di,baseObjects
+
+		mov	bp,cx
+		dec	bp
+		test	winflags,WIN_VSCROLL
+		jne	@@@@HasVScroll
+		sub	bp,11
+@@@@HasVScroll:
+		mov	es:[di].objX,bp
+		mov	es:[di].objY,0
+		
+		mov	bp,OBJCLOSEWIN
+		mov	cx,OBJ_SELECTABLE
+		call	near ptr addObjectBMS
+
+
+		mov	word ptr baseObjects,di
+		mov	word ptr baseObjects+2,es
+
+		pop	es
+		pop	ds
+		pop	di
+		pop	si
+		pop	bp
+		pop	cx
+		ret
+
+closeWinBMAdd	Endp
+
+;{----------------------------------------------------------------------}
+;{	vScrollAdd:							}
+;{	  add object structures for vertical scroll object		}			}
+;{									}
+;{	parameters:							}
+;{	  ax = x position						}
+;{	  bx = y position						}
+;{	  cx = width of work area					}
+;{	  dx = height of work area					}
+;{	  baseObjects = pointer to object structures for window		}
+;{	  otherObjects = pointer to other parent object structures	}
+;{----------------------------------------------------------------------}
+vScrollAdd	Proc	Far
+
+		push	dx
+		push	bp
+		push	si
+		push	di
+		push	ds
+		push	es
+
+		mov	si,seg baseObjects
+		mov	ds,si
+
+		les	di,baseObjects
+
+		test	winflags,WIN_TITLE_BAR
+		je	@@@@NoTitleBar
+		sub	dx,12
+@@@@NoTitleBar:
+		test	winflags,WIN_HSCROLL
+		je	@@@@NoHScroll
+		add	dx,12
+@@@@NoHScroll:
+		test	winflags,WIN_SIZE_BM
+		je	@@@@NoSizeBM
+		sub	dx,12
+@@@@NoSizeBM:
+		mov	bp,11
+		test	winflags,WIN_CLOSE_BM
+		jne	@@@@CloseBMPresent
+		mov	bp,23
+		sub	dx,12
+@@@@CloseBMPresent:
+		mov	es:[di].objX,cx
+		dec	es:[di].objX
+		mov	es:[di].objY,bp
+		mov	es:[di].objW,12
+		mov	es:[di].objH,dx
+		mov	es:[di].objtype,OBJ_PARENT
+		mov	es:[di].objflags,0
+		mov	bp,word ptr otherObjects
+		mov	word ptr es:[di].objptr,bp
+		mov	si,word ptr otherObjects+2
+		mov	word ptr es:[di].objptr+2,si
+
+		add	cx,12			; add width of vscroll object
+		add	di,size object
+
+		fartohuge di,es
+
+		mov	word ptr baseObjects,di
+		mov	word ptr baseObjects+2,es
+
+		mov	es,si
+		mov	di,bp			; set pointer to other objects
+
+		mov	word ptr es:[di],5	; 5 initial objects
+		add	di,2
+
+		mov	si,di
+		add	si,(5*size object)
+
+		push	cx
+		push	dx
+		mov	cx,12
+		mov	es:[di].objX,0
+		mov	es:[di].objY,0
+		xor	bp,bp
+		call	near ptr addObjectRectS
+	
+		sub	cx,2
+		sub	dx,2
+		mov	es:[di].objX,1
+		mov	es:[di].objY,1
+		mov	bp,090fh
+		call	near ptr addObjectBarS
+
+		pop	dx
+		mov	es:[di].objX,0
+		mov	es:[di].objY,0
+		mov	bp,OBJUPARROW
+		mov	cx,OBJ_SELECTABLE
+		call	near ptr addObjectBMS
+
+		mov	es:[di].objX,0
+		mov	es:[di].objY,11
+		mov	bp,OBJBLOCK
+		xor	cx,cx
+;		mov	cx,OBJ_SELECTABLE
+		call	near ptr addObjectBMS
+
+		mov	es:[di].objX,0
+		mov	bp,dx
+		sub	bp,12
+		mov	es:[di].objY,bp
+		mov	bp,OBJDNARROW
+		mov	cx,OBJ_SELECTABLE
+		call	near ptr addObjectBMS
+
+		pop	cx
+		fartohuge si,es
+
+		mov	word ptr otherObjects,si
+		mov	word ptr otherObjects+2,es
+
+		pop	es
+		pop	ds
+		pop	di
+		pop	si
+		pop	bp
+		pop	dx
+		ret
+
+vScrollAdd	Endp
+
+;{----------------------------------------------------------------------}
+;{	hScrollAdd:							}
+;{	  add object structures for horizontal scroll object		}			}
+;{									}
+;{	parameters:							}
+;{	  ax = x position						}
+;{	  bx = y position						}
+;{	  cx = width of work area					}
+;{	  dx = height of work area					}
+;{	  baseObjects = pointer to object structures for window		}
+;{	  otherObjects = pointer to other parent object structures	}
+;{----------------------------------------------------------------------}
+hScrollAdd	Proc	Far
+
+		push	cx
+		push	bp
+		push	si
+		push	di
+		push	ds
+		push	es
+
+		mov	si,seg baseObjects
+		mov	ds,si
+
+		les	di,baseObjects
+
+		test	winflags,(WIN_VSCROLL OR WIN_SIZE_BM)
+		je	@@@@HasVScroll
+		sub	cx,12
+@@@@HasVScroll:
+		mov	bp,dx
+		sub	bp,2
+		mov	es:[di].objX,0
+		mov	es:[di].objY,bp
+		mov	es:[di].objW,cx
+		mov	es:[di].objH,12
+		mov	es:[di].objtype,OBJ_PARENT
+		mov	es:[di].objflags,0
+		mov	bp,word ptr otherObjects
+		mov	word ptr es:[di].objptr,bp
+		mov	si,word ptr otherObjects+2
+		mov	word ptr es:[di].objptr+2,si
+
+		add	dx,12
+		add	di,size object
+
+		fartohuge di,es
+
+		mov	word ptr baseObjects,di
+		mov	word ptr baseObjects+2,es
+
+		mov	es,si
+		mov	di,bp			; set pointer to other objects
+
+		mov	word ptr es:[di],5	; 5 initial objects
+		add	di,2
+
+		mov	si,di
+		add	si,(5*size object)
+
+		push	cx
+		push	dx
+		mov	dx,12
+		mov	es:[di].objX,0
+		mov	es:[di].objY,0
+		xor	bp,bp
+		call	near ptr addObjectRectS
+	
+		sub	cx,2
+		sub	dx,2
+		mov	es:[di].objX,1
+		mov	es:[di].objY,1
+		mov	bp,090fh
+		call	near ptr addObjectBarS
+
+		pop	dx
+		pop	cx
+		push	cx
+		mov	es:[di].objX,0
+		mov	es:[di].objY,0
+		mov	bp,OBJLFARROW
+		mov	cx,OBJ_SELECTABLE
+		call	near ptr addObjectBMS
+
+		mov	es:[di].objX,11
+		mov	es:[di].objY,0
+		mov	bp,OBJBLOCK
+		xor	cx,cx
+;		mov	cx,OBJ_SELECTABLE
+		call	near ptr addObjectBMS
+
+		pop	cx
+		push	cx
+		mov	bp,cx
+		sub	bp,12
+		mov	es:[di].objX,bp
+		mov	es:[di].objY,0
+		mov	bp,OBJRTARROW
+		mov	cx,OBJ_SELECTABLE
+		call	near ptr addObjectBMS
+		pop	cx
+
+		fartohuge si,es
+
+		mov	word ptr otherObjects,si
+		mov	word ptr otherObjects+2,es
+
+		pop	es
+		pop	ds
+		pop	di
+		pop	si
+		pop	bp
+		pop	cx
+		ret
+
+hScrollAdd	Endp
+
+;{----------------------------------------------------------------------}
+;{	sizeWinBMAdd:							}
+;{	  add object structures for size window bitmap			}
+;{									}
+;{	parameters:							}
+;{	  ax = x position						}
+;{	  bx = y position						}
+;{	  cx = width of work area					}
+;{	  dx = height of work area					}
+;{	  baseObjects = pointer to object structures for window		}
+;{	  otherObjects = pointer to other parent object structures	}
+;{----------------------------------------------------------------------}
+sizeWinBMAdd	Proc	Far
+
+
+		push	cx
+		push	bp
+		push	si
+		push	di
+		push	ds
+		push	es
+
+		mov	si,seg baseObjects
+		mov	ds,si
+
+		les	di,baseObjects
+
+		mov	bp,cx
+		test	winflags,WIN_VSCROLL
+		je	@@@@NoVScroll
+		sub	bp,12
+@@@@NoVScroll:
+		dec	bp
+		mov	es:[di].objX,bp
+		mov	bp,dx
+		test	winflags,WIN_HSCROLL
+		je	@@@@NoHScroll
+		sub	bp,12
+@@@@NoHScroll:
+		sub	bp,2
+		mov	es:[di].objY,bp
+		
+		mov	bp,OBJSIZEWIN
+		mov	cx,OBJ_SELECTABLE
+		call	near ptr addObjectBMS
+
+		mov	word ptr baseObjects,di
+		mov	word ptr baseObjects+2,es
+
+		pop	es
+		pop	ds
+		pop	di
+		pop	si
+		pop	bp
+		pop	cx
+		ret
+
+sizeWinBMAdd	Endp
+
+;{----------------------------------------------------------------------}
+;{	getWindowMem:							}
+;{	  allocate memory for window structures				}
+;{									}
+;{	parameters:							}
+;{	  ax = bits for objects on window				}
+;{									}
+;{	returns:							}
+;{	  ax = number of objects					}
+;{	  bx:0 = pointer to buffer					}
+;{	  dx = true malloced offset					}
+;{----------------------------------------------------------------------}
+getWindowMem	Proc	near
+
+
+		push	bp
+		push	si
+		push	di
+		push	ds
+;
+;
+; ----- work area is always outlined
+;
+		xor	bp,bp
+		mov	di,(size winHeader)+(size object)+(2*size objRect)+2
+		mov	cx,1			; number of objects
+
+		mov	bx,WIN_TITLE_BAR	; initial test value
+		mov	dx,ax			; save flags
+
+		mov	si,seg WINOBJECTSIZE
+		mov	ds,si
+		xor	si,si			; starting offset
+@@@@WinObjectLoop:
+		test	bx,dx			; want this object in window?
+		je	@@@@WinNextObject		; nope so bypass
+		cmp	word ptr [si],'OW'
+		jne	@@@@WinNextObject
+		cmp	word ptr [si+2],'ZS'	; see if information available
+		jne	@@@@WinNextObject
+
+		inc	cx			; found another object
+
+		call	dword ptr [si].routine
+		add	di,ax			; add in size of object define
+		adc	bp,0			; structures
+
+@@@@WinNextObject:
+		add	si,size Executehead	; next structure
+		shl	bx,1
+		jnc	@@@@WinObjectLoop		; test all bits
+
+		mov	ax,size object
+		mul	cx			; get size object*num_objects
+		add	ax,di			; add in size of object define
+		adc	dx,bp			; structures
+		add	ax,15
+		adc	dx,0
+
+		push	cx
+		push	dx
+		push	ax			; push size to malloc
+		call	far ptr _myfarmalloc	; allocate buffer
+		pop	bx
+		pop	bx
+		pop	cx
+		mov	bx,dx
+		or	bx,ax
+		jne	@@@@AllocedOK
+		xor	ax,ax
+		xor	bx,bx
+		jmp	@@@@GWMExit
+@@@@AllocedOK:
+		mov	bx,dx
+		test	ax,0fh
+		je	@@@@NotNextSegment
+		inc	bx
+@@@@NotNextSegment:
+		mov	dx,ax
+		mov	ax,cx
+@@@@GWMExit:
+		pop	ds
+		pop	di
+		pop	si
+		pop	bp
+
+		ret
+
+getWindowMem	Endp
+
+
+;{----------------------------------------------------------------------}
+;{	WinTitleBarSize:						}
+;{	  return number of bytes to allocate for structure for		}
+;{	  window title bar.						}
+;{									}
+;{	paramters:							}
+;{	  none								}
+;{									}
+;{	returns:							}
+;{	  ax = size of structures needed for Title Bar			}
+;{----------------------------------------------------------------------}
+WinTitleBarSize	Proc	Far
+
+		mov	ax,(7*size object)+(size objBar)+(size objRect)\
+				+(4*size objLine)
+		ret
+
+WinTitleBarSize	Endp
+
+;{----------------------------------------------------------------------}
+;{	closeWinBMSize:							}
+;{	  return number of bytes to allocate for structure for		}
+;{	  close window BitMap.						}
+;{									}
+;{	paramters:							}
+;{	  none								}
+;{									}
+;{	returns:							}
+;{	  ax = size of structures needed for close Window Bitmap	}
+;{----------------------------------------------------------------------}
+closeWinBMSize	Proc	Far
+
+		mov	ax,(1*size object)
+		ret
+
+closeWinBMSize	Endp
+
+
+;{----------------------------------------------------------------------}
+;{	vScrollSize:							}
+;{	  return number of bytes to allocate for structure for		}
+;{	  vertical Scroll bar.						}
+;{									}
+;{	paramters:							}
+;{	  none								}
+;{									}
+;{	returns:							}
+;{	  ax = size of structures needed for vscroll Bar		}
+;{----------------------------------------------------------------------}
+vScrollSize	Proc	Far
+
+		mov	ax,(5*size object)+(2*size objBar)+(size objRect)
+		ret
+
+vScrollSize	Endp
+
+;{----------------------------------------------------------------------}
+;{	hScrollSize:							}
+;{	  return number of bytes to allocate for structure for		}
+;{	  horizontal Scroll bar.					}
+;{									}
+;{	paramters:							}
+;{	  none								}
+;{									}
+;{	returns:							}
+;{	  ax = size of structures needed for hscroll Bar		}
+;{----------------------------------------------------------------------}
+hScrollSize	Proc	Far
+
+		mov	ax,(5*size object)+(2*size objBar)+(size objRect)
+		ret
+
+hScrollSize	Endp
+
+;{----------------------------------------------------------------------}
+;{	sizeWinBMSize:							}
+;{	  return number of bytes to allocate for structure for		}
+;{	  size window BitMap.						}
+;{									}
+;{	paramters:							}
+;{	  none								}
+;{									}
+;{	returns:							}
+;{	  ax = size of structures needed for size Window Bitmap		}
+;{----------------------------------------------------------------------}
+sizeWinBMSize	Proc	Far
+
+		mov	ax,(1*size object)
+		ret
+
+sizeWinBMSize	Endp
+
+;{----------------------------------------------------------------------}
+;{	void _freeWindow(void);						}
+;{	  'C' callable free up window structure				}
+;{----------------------------------------------------------------------}
+_freeWindow	Proc	far
+;{----------------------------------------------------------------------}
+;{	freeWindow:							}
+;{	  free up window structure					}
+;{----------------------------------------------------------------------}
+freeWindow	Proc	far
+
+		push	ax
+		push	bx
+		push	cx
+		push	dx
+		push	si
+		push	ds
+
+		mov	ax,seg winHandle
+		mov	ds,ax
+
+		xor	ax,ax
+		xchg	ax,winHandle
+		or	ax,ax
+		je	@@@@NothingAlloced
+		mov	ds,ax
+		xor	si,si
+		mov	bx,[si].winOffset	; get true malloced offset
+		or	bx,bx
+		je	@@@@NoNewSegment
+		dec	ax
+@@@@NoNewSegment:
+		push	ax
+		push	bx
+		call	far ptr _myfarfree
+		pop	ax
+		pop	ax
+@@@@NothingAlloced:
+		pop	ds
+		pop	si
+		pop	dx
+		pop	cx
+		pop	bx
+		pop	ax
+		xor	ax,ax
+		ret
+
+freeWindow	Endp
+
+_freeWindow	Endp
+
+wincseg		ends
+
+		end
+
+@
+
+
+1.1
+log
+@Initial revision
+@
+text
+@d1 1
+a1 1
+; $Header$
+d11 4
+a14 1
+; $Log$
+d61 1
+a61 1
+windseg		segment 'FARDATA'
+d63 5
+a67 1
+winHandle	dw	?
+a81 4
+DGROUP		GROUP	_DATA
+
+_DATA		segment public 'DATA'
+_DATA		ends
+d85 1
+a85 1
+		assume cs:wincseg,ds:windseg
+d132 1
+a132 1
+;{	  es:di = procudure for window events				}
+d318 12
+d331 16
+d348 109
+d459 1
+a459 1
+DefWindProc	Endp
+d470 77
+a546 1
+@@@@notMyEvent:
+d548 1
+d563 1
+a563 1
+		mov	bx,seg DGROUP
+d567 2
+d571 1
+a571 2
+		mov	bx,seg winHandle	; get window with focus
+		mov	es,bx
+d592 1
+d603 2
+d607 1
+a607 2
+		mov	bx,seg winHandle	; get window with focus
+		mov	es,bx
+d730 1
+d738 1
+a738 1
+		mov	es:[di].objflags,0
+d1044 1
+d1066 1
+d1069 1
+d1078 1
+d1170 1
+a1171 2
+		pop	cx
+
+d1175 1
+d1181 2
+d1190 1
+d1193 1
+d1283 1
+d1286 1
+a1286 1
+
+d1290 1
+d1296 2
+d1300 2
+d1307 1
+d1309 1
+d1341 1
+d1369 1
+d1380 1
+@

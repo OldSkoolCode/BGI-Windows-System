@@ -1,0 +1,56 @@
+head	1.1;
+access;
+symbols;
+locks
+	KENH:1.1; strict;
+comment	@# @;
+
+
+1.1
+date	93.04.23.21.55.39;	author KENH;	state Exp;
+branches;
+next	;
+
+
+desc
+@@
+
+
+1.1
+log
+@Initial revision
+@
+text
+@;{----------------------------------------------------------------------}
+;{	FILEDLG.inc file dialog interface definitions			}
+;{	COPYRIGHT 1992 Futurescape Productions Inc.			}
+;{----------------------------------------------------------------------}
+
+		ifndef	EQUATESINC
+		include	equates.inc
+		endif
+
+FILEDLGINC	equ	1
+
+		ifndef	DIALOGINC
+		include	dialog.inc
+		endif
+
+		ifndef	OBJECTINC
+		include	object.inc
+		endif
+
+		ifndef	MOUSEINC
+		include	mouse.inc
+		endif
+
+		ifndef	TEXTEDITINC
+		include	textedit.inc
+		endif
+
+;
+; -----	global definitions
+;
+
+		global	fileDialog:far, _fileDialog:far
+@

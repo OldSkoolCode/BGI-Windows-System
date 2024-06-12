@@ -1,0 +1,22 @@
+
+ASM1 = circ.asm circ_s.asm cl_win.asm cl_win_s.asm diam.asm diam_s.asm
+ASM2 = dn_scr.asm dn_scr_s.asm le_scr.asm le_scr_s.asm resize.asm
+ASM3 = resize_s.asm ri_scr.asm ri_scr_s.asm scr_b.asm sq_s.asm
+ASM4 = up_scr.asm up_scr_s.asm
+
+
+
+bitmaps.inc: $(ASM1) $(ASM2) $(ASM3) $(ASM4)
+	copy $(ASM1) asm1.tmp
+	copy $(ASM2) asm2.tmp
+	copy $(ASM3) asm3.tmp
+	copy $(ASM4) asm4.tmp
+	copy asm1.tmp+asm2.tmp+asm3.tmp+asm4.tmp bitmaps.inc
+	del asm?.tmp
+
+
+.lbm.asm:
+		convert -d $*.lbm -pp4 $*.bin -c 12 12
+		debug $*.bin <conv.bat 
+		bintosrc $*.bin $*.asm
+

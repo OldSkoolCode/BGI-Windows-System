@@ -1,0 +1,124 @@
+
+ €€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€
+ €±∞±∞±∞±∞±∞±∞›                                                  ﬁ∞±∞±∞±∞±∞±∞±€
+ €∞±∞±∞±∞±∞±∞±›    INFORMATION FOR BBS SYSOPS AND DISK VENDORS   ﬁ±∞±∞±∞±∞±∞±∞€
+ €±∞±∞±∞±∞±∞±∞›                                                  ﬁ∞±∞±∞±∞±∞±∞±€
+ €€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€
+
+
+
+ €ﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ€
+ €   DISTRIBUTION TERMS    €
+ €‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹€
+
+
+ You are granted the following rights:
+
+    - You may duplicate, give away or sell this product
+    - You may charge a maximum of US $9 for each copy you sell
+    - Any copy may be transferred to another storage or distribution medium
+    - The archiving method used for this copy may be changed
+    - You may add files to the product, provided the files clearly indicate
+      that they are not part of the original product
+
+ You are specifically but not exclusively advised as follows:
+
+    - Pinnacle Software reserves the right to revoke all distribution rights
+      for unregistered copies of this product from any party at any time for
+      any reason.  However, unless you have been specifically informed of
+      this, you may distribute this product
+    - You may not alter or remove any of the product's files
+
+ BY DISTRIBUTING THE PRODUCT YOU ARE INDICATING ACCEPTANCE OF THESE TERMS
+
+
+
+ €ﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ€
+ €   TERMS   €
+ €‹‹‹‹‹‹‹‹‹‹‹€
+
+
+ This product may be used for free, provided it is not altered in any way
+ except those permitted in the file GO.INF.  If a small registration price
+ is paid ($19), the user can have his or her copy personalized, which 
+ includes the removal of an advertising screen.
+
+
+
+ €ﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ€
+ €   FILES LIST    €
+ €‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹€
+
+
+ This package comprises the following files:
+
+ ROOTNAME EXT  PURPOSE  DESCRIPTION
+ ÕÕÕÕÕÕÕÕ ÕÕÕ  ÕÕÕÕÕÕÕ  ÕÕÕÕÕÕÕÕÕÕÕ
+
+ READ     ME   Docu     Quick description of GO
+ VENDOR   DOC  Docu     This file
+
+ INT      INF  Docu     Overview of GO               ƒø
+ GO       INF  Docu     User manual for GO           ƒ¥
+ AMAZE    DOC  Docu     Pinnacle's other products    ƒ≈ƒƒ View via START.BAT
+ AMAZE    TXT  Docu     Order form; Pinnacle sampler ƒ¥
+ CHANGE   LOG  Docu     Program history              ƒŸ
+
+ WHY-REG  GO   Docu     Advantages of registration   ƒø
+ DISTRIB  GO   Docu     GO distribution terms        ƒ¥
+ HOW_REG  GO   Docu     How to register GO           ƒ≈ƒƒ View via GO.EXE
+ GO-STRT  DAT  Docu     Opening screen for GO        ƒ¥
+ GO-FORM  DAT  Docu     Order form for GO            ƒŸ
+
+ DESC     SDI  Docu     Auto-descriptor file used by some BBS's
+ FILE_ID  DIZ  Docu     Auto-descriptor file used by some BBS's
+
+ WAITBLK  EXE  Program  Batch file utility for diskette insertion
+ SETERR   EXE  Program  Batch file utility for flow control
+ WAIT     EXE  Program  Batch file utility for flow control
+ GETKEY   EXE  Program  Batch file utility for flow control
+ READING  EXE  Program  Batch file utility for progress message
+ GO-COPY  EXE  Program  Disk-copying utility
+ GO-DISKS EXE  Program  Disk-copying utility
+ SEE      EXE  Program  File print/view utility
+ GO_SMALL EXE  Program  GO.EXE compressed with the DIET utility
+ START    BAT  Program  Introduction to GO
+ GO-MENU  EXE  Program  Menuing utility
+ GO       EXE  Program  The main GO program
+
+ GO-COPY  COP  Data     Control file for GO-COPY.EXE
+ GO-DISKS DSK  Data     Control file for GO-DISKS.EXE
+ GO-MENU  MNU  Data     Menu definition used by GO.EXE
+ START    MNU  Data     Menu definition used by START.MNU
+
+ We hereby state that to the best of our knowledge, all of these files are
+ completely free of any controversial, antisocial, viral, trojan, illegal,
+ or tasteless material.
+
+
+
+ €ﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ€
+ €   ABOUT PINNACLE SOFTWARE    €
+ €‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹€
+
+
+ Pinnacle Software is a computer consulting company based in  Montreal, Quebec,
+ Canada.  We have been writing shareware since  1985  and are generally consid-
+ ered to be the most prolific authors of shareware in Canada.
+
+ You can call our Voice Support Line at 514-345-9578.
+
+ Our  24-hour  Support  BBS  can be reached at  514-345-8654.   It supports all
+ modem speeds up to 9600 bps (V32).   Validation is NOT required for downloads.
+ We are running Pinnacle's Sapphire bulletin board software.  You can, too!
+
+ You can send us Email on the GEnie system.  Write to:  T.CAMPBELL11
+
+ You can write to us at one of these addresses:
+
+ HEAD OFFICE:  Pinnacle Software, CP 386, Mont Royal, Quebec, Canada H3P 3C6
+
+ U.S. OFFICE:  Pinnacle Software, Box 714 Airport Rd, Swanton, Vermont 05488
+
+
+

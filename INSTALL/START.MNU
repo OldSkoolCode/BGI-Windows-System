@@ -1,0 +1,17 @@
+"GO!" -- Software Packaging and Installation Tool
+[GO]:  A quick overview
+[GO]:  User manual
+[GO]:  Registration form
+[GO]:  Program history
+
+INFO: Pinnacle Software's Amazing Shareware Promotion
+INFO: Order form for the Promotion
+INFO: Vendor and distributor information
+
+QUIT: Return to DOS
+;
+; USED BY:    START.BAT
+; SAVE FILE:  GO-MENU.MSV
+; SAVES:      000 = START.MNU
+;
+

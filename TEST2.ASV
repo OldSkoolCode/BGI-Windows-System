@@ -1,0 +1,21 @@
+
+
+
+#include <stdio.h>
+
+
+typedef struct tester
+ {
+ int	joemama;
+ char	temp[];
+ } tester;
+ 
+tester tester2 = { 45, "ABCDEFGHIJKLMNOPQRSTUVWXYZ" };
+
+void main(void)
+{
+
+	printf("tester2 = %s\n", tester2.temp);
+
+
+}

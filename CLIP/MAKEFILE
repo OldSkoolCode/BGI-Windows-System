@@ -1,0 +1,9 @@
+cliptest: cliptest.o clip.o
+  blink from lib:c.o cliptest.o clip.o to cliptest lib lib:lc.lib \
+             lib:amiga.lib sd sc
+
+cliptest.o: cliptest.c
+  lc -O cliptest.c
+
+clip.o:	clip.a
+  comp:cape/cape -a clip.a -oclip.o

@@ -1,0 +1,8 @@
+DEFINITION MODULE clip2d;
+
+VAR
+  XLeft,XRight,YTop,YBottom : INTEGER;
+
+PROCEDURE clip2d(VAR px,py,qx,qy : INTEGER): BOOLEAN;
+
+END clip2d.

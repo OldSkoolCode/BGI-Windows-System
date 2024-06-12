@@ -1,0 +1,34 @@
+
+
+In Default window procedure ----->>
+
+	make flag for fast rectangle outline moving of window
+	or full bitmap moving
+
+bgi drivers
+	egavga
+	nvga		; x modes of vga
+	mono		; mono chrome
+	tandy		; tandy line of computers
+
+	svga		; super vga (multiple)
+
+
+window width & height seem to be slightly off *** done
+
+
+window close should generate refresh rectangle message *** done
+
+
+egavga driver should include special mode that gets set through special 
+function to set width and height of mode and store mode number for this
+special mode.
+
+			algorithm
+			---------
+
+			detect extra mode - Detect routines
+			say driver is egavga, mode == 8000h+mode number.
+			when driver is called with -1 mode number
+				use special mode #
+			

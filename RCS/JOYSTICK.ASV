@@ -1,0 +1,320 @@
+head	1.1;
+access;
+symbols;
+locks
+	KENH:1.1; strict;
+comment	@; @;
+
+
+1.1
+date	93.04.23.21.10.21;	author KENH;	state Exp;
+branches;
+next	;
+
+
+desc
+@@
+
+
+1.1
+log
+@Initial revision
+@
+text
+@; $Header$
+
+;{----------------------------------------------------------------------}
+;{	joystick device library routines				}
+;{	Copyright (C) 1992 Futurescape Productions			}
+;{	written by Kenneth L. Hurley					}
+;{	started	9-1-1992						}
+;{	written with turbo assembler ver 3.1				}
+;{----------------------------------------------------------------------}
+
+; $Log$
+		locals
+
+		include	joystick.inc
+
+INITSTART	Segment	Public 'FAR_DATA'
+
+		Executehead	<"GRIN",32767,initjoys>
+
+INITSTART	Ends
+
+JoyDevData	Segment	Public 'FAR_DATA'
+
+ijoyup1		dw	0			; threshold values
+ijoydown1	dw	0
+ijoyright1	dw	0
+ijoyleft1	dw	0
+ijoyup2		dw	0			; threshold values
+ijoydown2	dw	0
+ijoyright2	dw	0
+ijoyleft2	dw	0
+tjoy1x		dw	?
+joy1x		dw	?
+tjoy1y		dw	?
+joy1y		dw	?
+tjoy2x		dw	?
+joy2x		dw	?
+tjoy2y		dw	?
+joy2y		dw	?
+joybuts		dw	?
+_joysactive	label	byte
+joysactive	db	0fh			; assume both are there
+
+JoyDevData	Ends
+
+JoyDevCode	Segment Public 'CODE'
+
+		assume	cs:JoyDevCode, ds:JoyDevData
+
+;{----------------------------------------------------------------------}
+;{	initjoys:							}
+;{	  initialize joysticks in case digital output wanted		}
+;{----------------------------------------------------------------------}
+initjoys	Proc	Far
+
+		pushall
+		
+		xor	ax,ax
+		call	far ptr readjoys	; get analog inputs
+		mov	bp,seg ijoyleft1
+		mov	ds,bp
+		mov	bp,ax
+		shr	bp,1
+		mov	ijoyleft1,bp
+		add	bp,ax
+		mov	ijoyright1,bp
+		mov	bp,bx
+		shr	bp,1
+		mov	ijoyup1,bp
+		add	bp,bx
+		mov	ijoydown1,bp
+		mov	bp,cx
+		shr	bp,1
+		mov	ijoyleft2,bp
+		add	bp,cx
+		mov	ijoyright2,bp
+		mov	bp,dx
+		shr	bp,1
+		mov	ijoyup2,bp
+		add	bp,dx
+		mov	ijoydown2,bp
+		
+		xor	ax,ax
+		popall
+		ret	
+
+initjoys	Endp
+
+;{----------------------------------------------------------------------}
+;{	readjoys:							}
+;{	  read joystick values						}
+;{	  returns:							}
+;{	  for analog							}
+;{	    ax = joy 0 x						}
+;{	    bx = joy 0 y						}
+;{	    cx = joy 1 x						}
+;{	    dx = joy 1 y						}
+;{	    bp = joystick buttons					}
+;{	  for digital							}
+;{	    si = bit settings for each direction			}
+;{	    0 = up	joy1,joy2 at bits 4-7				}
+;{	    1 = down							}
+;{	    2 = left							}
+;{	    3 = right							}
+;{----------------------------------------------------------------------}
+readjoys	Proc	Far
+
+		push	di
+		push	ds
+
+		mov	ax,seg JoyPort
+		mov	ds,ax
+		mov	dx,JoyPort		; get address of JoyPort
+		mov	cx,joytimeout		; maximum loop counter
+		cli
+		out	dx,al			; start resistive values
+		mov	ah,joysactive		; get joystick bits active
+		xor	bx,bx			; zero out bx value
+		xor	bp,bp
+		xor	si,si
+		xor	di,di			; zero out all of them
+@@@@1:
+		mov	dx,JoyPort		; get address of JoyPort
+		in	al,dx			; get value
+		test	al,1			; check first bit
+		jne	@@@@2
+		test	ah,1			; see if already have value
+		je	@@@@2
+		mov	bx,joytimeout
+		sub	bx,cx
+		and	ah,0eh
+@@@@2:
+		test	al,2
+		jne	@@@@3
+		test	ah,2
+		je	@@@@3
+		mov	bp,joytimeout
+		sub	bp,cx
+		and	ah,0dh
+@@@@3:
+		test	al,4
+		jne	@@@@4
+		test	ah,4
+		je	@@@@4
+		mov	si,joytimeout
+		sub	si,cx
+ 		and	ah,0bh
+@@@@4:
+		test	al,8
+		jne	@@@@5
+		test	ah,8
+		je	@@@@5
+		mov	di,joytimeout
+		sub	di,cx
+		and	ah,7
+@@@@5:
+		test	ah,0fh
+		je	@@@@6			; all finished
+		dec	cx
+		je	@@@@5a
+		jmp	@@@@1			; loop if not done with resist.
+@@@@5a:
+		not	ah
+		and	ah,0fh
+		mov	joysactive,ah		; save which joystick bits fini
+@@@@6:
+		xchg	ax,bx
+		sti				; start interrupts again
+		mov	cl,4
+		shr	bx,cl
+		xchg	bp,bx			; save joystick triggers
+		not	bp
+		mov	cx,si
+		mov	dx,di
+		xor	si,si			; no digital yet
+		cmp	bx,ijoyup1
+		ja	@@@@7			; are we in up direction joy 1
+		mov	si,1
+@@@@7:
+		cmp	bx,ijoydown1
+		jb	@@@@8			; see if in down direction
+		or	si,2
+@@@@8:
+		cmp	ax,ijoyleft1
+		ja	@@@@9			; how about left
+		or	si,4
+@@@@9:
+		cmp	ax,ijoyright1
+		jb	@@@@10			; well then right?
+		or	si,8
+@@@@10:
+		cmp	dx,ijoyup2
+		ja	@@@@11			; and now up joystick 2
+		or	si,10h
+@@@@11:
+		cmp	dx,ijoydown2
+		jb	@@@@12			; ok joystick 2 down
+		or	si,20h
+@@@@12:
+		cmp	cx,ijoyleft2
+		ja	@@@@13			; and left
+		or	si,40h
+@@@@13:
+		cmp	cx,ijoyright2
+		jb	@@@@14			; and right
+		or	si,80h
+@@@@14:
+		pop	ds
+		pop	di
+		ret
+
+readjoys	Endp
+
+;{----------------------------------------------------------------------}
+;{	joydig1:							}
+;{	  read joystick 1 for cursor movement				}
+;{----------------------------------------------------------------------}
+joydig1		Proc	Far
+
+		pushall
+
+		call	far ptr readjoys	; read the joysticks
+		mov	ax,si
+		and	ax,0fh			; only care about bottom 4 bits
+		test	bp,1			; see if either button down
+		je	@@@@1
+		or	ax,40h			; say enter key pressed
+@@@@1:
+		test	bp,2
+		je	jodi1exit
+		or	ax,20h
+jodi1exit:
+		popall
+		ret
+
+joydig1		Endp
+
+;{----------------------------------------------------------------------}
+;{	joy1button:							}
+;{	  get buttons from joystick 1					}
+;{----------------------------------------------------------------------}
+joy1button	Proc	Far
+
+		mov	dx,JoyPort
+		in	al,dx
+		shl	al,1
+		and	ax,60h
+		ret
+
+joy1button	Endp
+
+;{----------------------------------------------------------------------}
+;{	joydig2:							}
+;{	  read joystick 2 for cursor movement				}
+;{----------------------------------------------------------------------}
+joydig2		Proc	Far
+
+		pushall
+
+		call	far ptr readjoys	; read the joysticks
+		mov	ax,si
+		shr	ax,1
+		shr	ax,1
+		shr	ax,1
+		shr	ax,1		
+		test	bp,4			; see if either button down
+		je	@@@@1
+		or	ax,40h			; say enter key pressed
+@@@@1:
+		test	bp,8
+		je	jodi2exit
+		or	ax,20h
+jodi2exit:
+		popall
+		ret
+
+joydig2		Endp
+
+;{----------------------------------------------------------------------}
+;{	joy2button:							}
+;{	  get buttons from joystick 2					}
+;{----------------------------------------------------------------------}
+joy2button	Proc	Far
+
+		mov	dx,JoyPort
+		in	al,dx
+		shr	al,1
+		and	ax,60h
+		ret
+
+joy2button	Endp
+
+JoyDevCode	Ends
+
+		end
+
+@

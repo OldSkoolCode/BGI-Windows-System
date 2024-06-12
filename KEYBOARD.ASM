@@ -1,0 +1,364 @@
+; $Header: e:/graphic\RCS\keyboard.asm_v 1.1 1993/04/23 21:10:21 KENH Exp KENH $
+
+;{----------------------------------------------------------------------}
+;{	keyboard device library routines				}
+;{	Copyright 1994 Kenneth L. Hurley				}
+;{	written by Kenneth L. Hurley					}
+;{	started	9-1-1992						}
+;{	written with turbo assembler ver 3.1				}
+;{----------------------------------------------------------------------}
+
+; $Log: keyboard.asm_v $
+; Revision 1.1  1993/04/23  21:10:21  KENH
+; Initial revision
+;
+		locals
+
+		include	keyboard.inc
+
+biosseg		segment	at 40h
+
+		org	1ah
+buffhead	dw	?
+bufftail	dw	?
+keybuff		db	?
+
+biosseg		Ends
+
+zseg		segment at 0
+
+		org	20h
+timervec	dd	?
+
+zseg		Ends
+
+INITSTART	Segment	Public 'FAR_DATA'
+
+		Executehead	<"GRIN",32767,installkeybd>
+
+INITSTART	Ends
+
+INITEND		Segment Public 'FAR_DATA'
+
+		Executehead	<"GREN",32767,uninstallkeybd>
+
+INITEND		Ends
+		
+EVENTHANDLER	Segment	Public 'FAR_DATA'
+
+		Executehead	<"EVHA", 1, clearKeyboardKey, KEYBOARDDEVICE>
+
+EVENTHANDLER	Ends
+
+KDevData	Segment	Public 'FAR_DATA'
+
+keymap		db	16 	dup (0)
+lastkey		dw	0
+inkey		dw	0
+eatkeys		dw	FALSE			; whether to eat keys or not
+debouncekeys	dw	0
+
+KDevData	Ends
+
+KDevCode	Segment Public 'CODE'
+
+		assume	cs:KDevCode,ds:KDevData
+
+installed9	dw	0
+saveint9	dd	?
+
+;{----------------------------------------------------------------------}
+;{	setKeySwitch:							}
+;{	  sets keyboard switch to either bit map layout or		}
+;{	  buffer layout							}
+;{	  ax = bit 0=0 for buffer layout =1 for bit map			}
+;{	       bit 1=0 for no debouncing of keys 1= for debouncing	}
+;{	       bit 1 used only if bit map				}
+;{----------------------------------------------------------------------}
+setKeySwitch	Proc	Far
+
+		push	bx
+		push	ds
+		mov	bx,seg eatkeys
+		mov	ds,bx
+		xor	bx,bx
+		shr	ax,1
+		jnc	@@1
+		mov	bx,TRUE
+@@1:
+		mov	eatkeys,bx
+		cmp	bx,0
+		je	@@2
+		xor	bx,bx
+		shr	ax,1
+		jnc	@@2
+		mov	bx,1
+@@2:
+		mov	debouncekeys,bx
+		pop	ds
+		pop	bx
+		ret
+
+setKeySwitch	Endp
+
+;{----------------------------------------------------------------------}
+;{	getKeySwitch:							}
+;{	  gets keyboard switch to either bit map layout or		}
+;{	  buffer layout							}
+;{	  returns							}
+;{	  ax = bit 0=0 for buffer layout =1 for bit map			}
+;{	       bit 1=0 for no debouncing of keys 1= for debouncing	}
+;{	       bit 1 used only if bit map				}
+;{----------------------------------------------------------------------}
+getKeySwitch	Proc	Far
+
+		push	ds
+		mov	ax,seg eatkeys
+		mov	ds,ax
+		xor	ax,ax
+		cmp	eatkeys,0
+		je	@@1
+		or	ax,1
+		cmp	debouncekeys,0
+		je	@@1
+		or	ax,2
+@@1:
+		pop	ds
+		ret
+
+getKeySwitch	Endp
+
+;{----------------------------------------------------------------------}
+;{	fastkeybd sets the keyboard to fast typematic rate		}
+;{----------------------------------------------------------------------}
+fastkeybd	Proc	Near
+
+		mov	al,0F3h
+		call	near ptr writekeybd
+		jcxz	@@1
+		mov	al,1
+		call	near ptr writekeybd
+@@1:
+		ret
+
+fastkeybd	Endp
+
+;{----------------------------------------------------------------------}
+;{	writetokeyboard controller					}
+;{	al = byte to write						}
+;{----------------------------------------------------------------------} 
+writekeybd	Proc	Near
+
+		cli
+		xchg	ah,al
+		xor	cx,cx
+@@1:
+		in	al,keybstatus
+		test	al,02
+		loopnz @@1
+		jcxz	wrkbexit
+		xchg	ah,al
+		out	keybdIO,al
+		xor	cx,cx
+@@2:
+		in	al,keybstatus
+		test	al,02
+		loopnz @@2
+		jcxz	wrkbexit
+		xor	cx,cx
+@@3:
+		in	al,keybstatus
+		test	al,01
+		loopz	@@3
+		jcxz	wrkbexit
+		in	al,keybdIO
+		cmp	al,0fah
+		je	wrkbexit
+		xor	cx,cx
+wrkbexit:
+		sti
+		ret
+
+writekeybd	Endp
+
+;{----------------------------------------------------------------------}
+;{	installkeybd:							}
+;{	  install the keyboard vector through dos			}
+;{----------------------------------------------------------------------}
+installkeybd	Proc	Far
+
+		pushall
+		cmp	cs:installed9,0
+		jne	inkbexit
+		mov	cs:installed9,1
+		mov	ah,GetIntVec
+		mov	al,09		; interrup vector for keyboard atn
+		Int	MsDos		; call through MsDos
+		mov	word ptr cs:saveint9,bx
+		mov	word ptr cs:saveint9+2,es ; save old routine address
+		mov	ax,seg mykeyrtn
+		mov	ds,ax
+		lea	dx,mykeyrtn
+		mov	ah,SetIntVec
+		mov	al,09
+		Int	MsDos
+;		call	near ptr fastkeybd	; set up fast keyboard
+inkbexit:
+		xor	ax,ax
+		popall
+		ret
+
+installkeybd	endp
+
+;{----------------------------------------------------------------------}
+;{	uninstallkeybd:							}
+;{	  uninstall the keyboard driver vector				}
+;{----------------------------------------------------------------------}
+uninstallkeybd	Proc	Far
+
+		pushall
+		cmp	word ptr cs:installed9,0
+		je	uninkbexit
+		mov	word ptr cs:installed9,0
+		lds	dx,cs:saveint9
+		mov	ah,SetIntVec
+		mov	al,09
+		Int	MsDos
+uninkbexit:
+		xor	ax,ax
+		popall
+		ret
+
+uninstallkeybd	Endp
+
+;{----------------------------------------------------------------------}
+;{	mykeyrtn:							}
+;{	 takes care of keyboard handler routine				}
+;{----------------------------------------------------------------------}
+mykeyrtn	Proc	Far
+
+		push	ax		; save registers used
+		pushall
+		cld			; clear direction flag
+		mov	ax,seg inkey
+		mov	ds,ax		; set out data segment
+		mov	bx,seg tMsgQueue
+		mov	es,bx
+		mov	di,offset tMsgQueue
+		xor	ah,ah
+		in	al,keybdIO	; get keycode in
+mykrl1:
+		mov	bx,ax
+		and	bx,7fh
+		cmp	bx,inkey	; check it
+		je	mykrl2		; yep so say key released
+		test	ax,80h		; don't save break codes or extended
+		jne	mykrl3
+mykrl2:
+		mov	inkey,ax	; save last key press
+		mov	bx,ax
+		mov	ah,KEYBOARDDEVICE
+		mov	al,KEYBOARDPRESS
+		test	bl,80h
+		je	@@wasKeyPress
+		mov	al,KEYBOARDRELEASE
+@@wasKeyPress:
+		call	far ptr addMsgQueue
+		mov	ax,bx
+mykrl3:
+		mov	bx,ax		; save keypress
+		mov	cx,ax
+		rol	al,1		; put high bit into low bit
+		mov	ah,al		; save low bit status
+		and	ax,101h		; mask out low bit
+		xor	ax,100h		; make low bit not low bit
+		mov	dl,al		; get break bit
+		shl	dl,1		; shift up one
+		or	dl,ah		; and save make bit
+		and	cx,7		; mask to get bit offset
+		shl	ax,cl		; put into correct bit
+		and	bx,78h		; get to byte offset
+		shr	bx,1
+		shr	bx,1
+		shr	bx,1		; get to byte wanted
+		not	al
+		and	[bx+keymap],al
+		or	[bx+keymap],ah	; save bit setting
+		cmp	eatkeys,FALSE
+		jne	@@2		; say we want direct keys only
+mykrl4:
+		popall
+		pop	ax
+		jmp	cs:saveint9	; go through old vector then
+@@2:		
+		in	al,keybdrs	; reset keyboard
+		or	al,80h		; telling keyboard we
+		out	keybdrs,al	; processed the key
+		xor	al,80h
+		out	keybdrs,al
+		mov	al,20h
+		out	20h,al		; signal end of interrupt
+		popall
+		pop	ax
+		iret		; pretend no key pressed to o.s.
+
+mykeyrtn	endp
+
+;{----------------------------------------------------------------------}
+;{	getbitmapkey:							}
+;{	  wait for a bitmap key to be pressed				}
+;{	  returns							}
+;{	  ax = keyvalue							}
+;{----------------------------------------------------------------------}
+getbitmapkey	Proc	Far
+
+		push	bx
+		push	ds
+		mov	ax,seg inkey
+		mov	ds,ax
+		mov	ax,inkey
+@@1:
+		mov	bx,inkey
+		test	bx,80h			; key release value
+		je	@@2			; yes don't check
+		xor	ax,ax			; just released key
+		jmp	@@1
+@@2:
+		cmp	ax,bx			; see if same key
+		je	@@1
+		mov	ax,bx
+		pop	ds
+		pop	bx
+		ret
+
+getbitmapkey	Endp
+
+;{----------------------------------------------------------------------}
+;{ Function:	clearKeyboardKey					}
+;{ Description:	clear the keyboard buffer to prevent overflow		}
+;{ Parameters:	.							}
+;{ Returns:	.							}
+;{----------------------------------------------------------------------}
+clearKeyboardKey Proc	far
+
+
+		mov	ah,INPSTAT		; any keys waiting
+		int	MSDOS
+		cmp	al,0ffh
+		jne	@@NoKeysWaiting
+@@KillKeyboard:
+		mov	ah,UNFCHRIN
+		int	MSDOS
+		cmp	al,0
+		je	@@KillKeyboard
+@@NoKeysWaiting:
+		xor	ax,ax
+		ret
+
+
+clearKeyboardKey Endp
+
+KDevCode	Ends
+
+		end
+

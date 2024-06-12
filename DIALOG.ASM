@@ -1,0 +1,923 @@
+; $Header: e:/graphic\RCS\dialog.asm_v 1.2 1993/05/30 00:13:57 KENH Exp KENH $
+
+;{----------------------------------------------------------------------}
+;{	msdos dialog library routines					}
+;{	Copyright 1994 Kenneth L. Hurley				}
+;{	written by Kenneth L. Hurley					}
+;{	started	9-1-1992						}
+;{	written with turbo assembler ver 3.1				}
+;{----------------------------------------------------------------------}
+
+; $Log: dialog.asm_v $
+; Revision 1.2  1993/05/30  00:13:57  KENH
+; *** empty log message ***
+;
+; Revision 1.1  1993/04/23  21:10:21  KENH
+; Initial revision
+;
+
+		locals
+
+		include	dialog.inc
+
+EVENTHANDLER	Segment	Public 'FAR_DATA'
+
+;
+; ----- for system dialog boxes.  You can still receive systems
+;	messages first if your priority is greater than 50000
+;
+		Executehead	<"EVHA", 53000, dialogDeviceEvent, MOUSEDEVICE>
+		Executehead	<"EVHA", 51000, dialogItemEvent, DIALOGDEVICE>
+		Executehead	<"EVHA", 50000, dialogCloseEvent, DIALOGDEVICE>
+		Executehead	<"EVHA", 50000, dialogActiveEvent, MOUSEDEVICE>
+		Executehead	<"EVHA", 50000, dialogActiveEvent, KEYBOARDDEVICE>
+
+EVENTHANDLER	Ends
+
+dialogdseg	Segment Public 'FAR_DATA'
+
+;
+; -----	System message dialog resource data
+;
+alertDialog	dw	7
+objAlrtRect	object	<0, 0, 0, 0, OBJ_RECT, 0, 0, rect1>
+objAlrtBar	object	<1, 1, 0, 0, OBJ_BAR, 0, 0, sysDialogBar>
+objAlrtLine1	object	<1, 1, 0, 1, OBJ_LINE, 0, 0, line1>
+objAlrtLine2	object	<1, 2, 1, 0, OBJ_LINE, 0, 0, line1>
+objAlrtLine3	object	<0, 1, 0, 0, OBJ_LINE, 0, 0, line2>
+objAlrtLine4	object	<2, 0, 0, 0, OBJ_LINE, 0, 0, line2>
+objAlrtStr	object	<0, 0, 0, 0, OBJ_PARENT, 0, 0, dstrParent>
+objAlrtBM1	object	<0, 0, 0, 0, OBJ_BITMAP, 0, 0, 0>
+objAlrtBM2	object	<0, 0, 0, 0, OBJ_BITMAP, 0, 0, 0>
+objAlrtBM3	object	<0, 0, 0, 0, OBJ_BITMAP, 0, 0, 0>
+
+dstrParent	dw	1
+dstrObj		object	<0, 0, 0, 0, OBJ_STR, 0, 0, oStr1>
+
+rect1		objRect	<0, 0, REPLACE_MODE>
+sysDialogBar	objBar	<0, 7, REPLACE_MODE, 1, 0>
+line1		objLine	<0, 0fh, REPLACE_MODE, 0, 0>
+line2		objLine	<0, 8, REPLACE_MODE, 0, 0>
+line3		objLine	<0, 0, REPLACE_MODE, 0, 0>
+oStr1		objStr	<0, 0, 0, 0, 8, 7, XPARENT_MODE, 0>
+
+
+textWidth	dw	?
+textHeight	dw	?
+dialogX		dw	?
+dialogY		dw	?
+dialogW		dw	?
+dialogH		dw	?
+
+buttonWidth	dw	?
+buttonY		dw	?
+dialogOn	dw	FALSE
+sysDialogOn	dw	FALSE
+endDialog	dw	?
+dialogPtr	dd	?
+lastDialogObject dd	-1
+lastObjectX	dw	?
+lastObjectY	dw	?
+dialogExitObject dw	0
+dialogBack	dd	?
+MouseDialogPress dw	?
+tmsgBuff	db	16 dup (?)
+
+dialogdseg	Ends
+
+DGROUP		GROUP 	_DATA
+
+_DATA		segment public 'DATA'
+_DATA		ends
+
+dialogcseg	Segment Public 'CODE'
+
+		assume	cs:dialogcseg,ds:dialogdseg
+
+;{----------------------------------------------------------------------}
+;{	_alert(int x, int y, char far *string, int buttons, int icon);	}
+;{	  C callable alert box						}
+;{----------------------------------------------------------------------}
+_alert		Proc	C far
+
+		arg	alrtX:word, alrtY:word, alrtStr:dword, buttons:word
+		arg	icon:word
+
+		uses	si,di
+
+		mov	ax,alrtX
+		mov	bx,alrtY
+		mov	cx,word ptr alrtStr+2
+		mov	dx,word ptr alrtStr
+		mov	si,buttons
+		mov	di,icon
+		call	far ptr alert
+		ret
+
+_alert		Endp
+
+;{----------------------------------------------------------------------}
+;{	alert:								}
+;{	  do an alert box						}
+;{									}
+;{	parameters:							}
+;{	  ax = x position						}
+;{	  bx = y position						}
+;{	  cx:dx = far pointer to string					}
+;{	  si = bits for buttons and icon				}
+;{	  di = icon # if icon there					}
+;{									}
+;{	returns:							}
+;{	  ax = button pressed						}
+;{	  ax = -1 if can't allocate memory				}
+;{----------------------------------------------------------------------}
+alert		Proc	far
+
+		pushall
+
+		mov	bp,seg dialogX
+		mov	ds,bp
+		mov	dialogX,ax
+		mov	dialogY,bx		; save x & y
+		mov	dialogW,2
+		mov	dialogH,2
+
+		mov	alertDialog,7		; seven initial objects
+
+		mov	word ptr oStr1.strptr+2,cx
+		mov	word ptr oStr1.strptr,dx
+
+		mov	dx,di			; save icon #
+
+		mov	di,offset objAlrtBM1	; first bitmap
+		xor	ax,ax
+		xor	bx,bx
+		test	si,DIALOG_ICON_BIT
+		je	@@NoIcon
+		inc	alertDialog		; 1 bitmap so far
+		mov	cx,seg InternalBitmaps
+		add	dx,offset InternalBitmaps
+		mov	word ptr [di].objX,4
+		mov	word ptr [di].objY,4
+		mov	word ptr [di].objptr,dx
+		mov	word ptr [di].objptr+2,cx
+		mov	word ptr [di].objflags,0
+		add	di,size object
+		push	di
+		push	es
+		mov	es,cx
+		mov	di,dx
+		les	di,es:[di].bitmapNormalPtr
+		mov	ax,es:[di]
+		mov	bx,es:[di+2]
+		pop	es
+		pop	di
+@@NoIcon:
+		add	ax,8			; 4 pixels each side
+		add	bx,8
+		mov	objAlrtStr.objX,ax
+		mov	objAlrtStr.objY,8
+		add	ax,4			; for border
+		add	bx,4
+		mov	dialogW,ax
+		mov	dialogH,bx
+
+		push	di
+		les	di,oStr1.strptr
+		mov	cx,-1
+		xor	al,al
+		mov	bx,di
+		repne	scasb			; wait till zero byte found
+		mov	di,bx
+		neg	cx
+		sub	cx,2
+		jne	@@objHasText
+		xor	bx,bx
+		xor	cx,cx
+		jmp	@@objHasNoText
+@@objHasText:
+		push	si
+		push	ds
+		mov	ax,seg DGROUP
+		mov	ds,ax
+	 	callBGI	textsize		; get text size
+		pop	ds
+		pop	si
+		add	bx,4			; 4 pixels on right side
+@@objHasNoText:
+		pop	di			; recover bitmap pointer
+
+		mov	objAlrtStr.objW,bx
+		mov	dstrObj.objW,bx
+		add	dialogW,bx
+		mov	objAlrtStr.objH,cx
+		mov	dstrObj.objH,cx
+		mov	ax,cx
+		add	ax,8
+		cmp	ax,dialogH
+		jl	@@NoAddHeight
+		add	dialogH,cx
+@@NoAddHeight:
+		xor	ax,ax
+		xor	bx,bx			; number buttons initially
+		test	si,DIALOG_OK_BIT OR DIALOG_CANCEL_BIT
+		jne	@@SomeButtons
+		jmp	@@NoButtons
+@@SomeButtons:
+		mov	cx,seg InternalBitmaps
+		mov	dx,offset InternalBitmaps
+		add	dx,OBJOKBUTTON
+		push	di
+		push	es
+		mov	es,cx
+		mov	di,dx
+		les	di,es:[di].bitmapNormalPtr
+		mov	ax,es:[di]
+		mov	bx,es:[di+2]
+		pop	es
+		pop	di
+		add	bx,8
+		add	bx,dialogH
+		xchg	bx,dialogH		; get y position for buttons
+		mov	buttonY,bx
+		mov	buttonWidth,ax
+		add	ax,16			; 8 pixels each side
+
+		push	di			; save pointer
+		xor	bp,bp			; initial width
+		xor	bx,bx			; number of buttons
+		test	si,DIALOG_OK_BIT	; ok button present?
+		je	@@NoOKButton
+		inc	alertDialog		; one more bitmap
+		add	bp,ax			; one buttons width add
+		inc	bx			; one more button
+		mov	cx,buttonY
+		mov	[di].objY,cx
+		mov	dx,offset InternalBitmaps
+		add	dx,OBJOKBUTTON
+		mov	cx,seg InternalBitmaps
+		mov	word ptr [di].objptr,dx
+		mov	word ptr [di].objptr+2,cx
+		mov	[di].objID,OK_BUTTON
+		mov	word ptr [di].objflags,OBJ_SELECTABLE
+		add	di,size object
+@@NoOKButton:
+		test	si,DIALOG_CANCEL_BIT
+		je	@@NoCancelButton
+		inc	alertDialog		; one more bitmap
+		add	bp,ax
+		inc	bx
+		mov	dx,offset InternalBitmaps
+		mov	cx,buttonY
+		mov	[di].objY,cx
+		add	dx,OBJCANCELBUTTON
+		mov	cx,seg InternalBitmaps
+		mov	word ptr [di].objptr,dx
+		mov	word ptr [di].objptr+2,cx
+		mov	[di].objID,CANCEL_BUTTON
+		mov	word ptr [di].objflags,OBJ_SELECTABLE
+		add	di,size object
+@@NoCancelButton:
+		cmp	bp,dialogW		; see if enough width
+		jl	@@NoNewWidth
+		mov	dialogW,bp
+@@NoNewWidth:
+		pop	di
+		mov	ax,dialogW		; get width of dialog
+		mov	bp,ax			; save for later
+		shr	bp,1
+		xor	dx,dx
+		div	bx			; divide by # buttons
+		shr	ax,1			; get mid point
+		add	bp,ax
+		mov	cx,buttonWidth		; get button width
+		shr	cx,1			; and half button width
+		sub	ax,cx			; center button
+		mov	[di].objX,ax
+		dec	bx
+		je	@@NoButtons
+		add	di,size object
+		sub	bp,cx
+		mov	[di].objX,bp
+@@NoButtons:
+		mov	ax,dialogX
+		mov	bx,dialogY
+		mov	cx,dialogW
+		mov	dx,dialogH
+
+		mov	objAlrtRect.objW,cx
+		mov	objAlrtRect.objH,dx
+
+		sub	cx,2
+		sub	dx,2
+		mov	objAlrtBar.objW,cx
+		mov	objAlrtBar.objH,dx
+
+		mov	objAlrtLine1.objW,cx
+
+		mov	objAlrtLine2.objH,dx
+
+		mov	objAlrtLine3.objX,cx
+		mov	objAlrtLine3.objW,cx
+		mov	objAlrtLine3.objH,dx
+
+		mov	objAlrtLine4.objW,cx
+		mov	objAlrtLine4.objY,dx
+		mov	objAlrtLine4.objH,dx
+
+		mov	bx,cx
+		add	bx,2
+		add	dx,2
+
+		mov	ax,seg DGROUP
+		mov	ds,ax
+
+		callBGIUtil bitsperpixel
+
+		assume	ds:DGROUP
+
+		mov	bp,ax
+		and	bp,7
+		mov	cl,ds:[bp+shiftvalues]
+		mov	bp,ax
+		shr	bp,1
+		shr	bp,1
+		shr	bp,1
+		jne	@@OnlyMult
+		mov	bp,1
+@@OnlyMult:
+		push	dx
+		mov	ax,bx
+		mul	bp
+		shr	ax,cl
+		pop	dx
+
+		mul	dx			; times height
+
+		add	ax,4			; width and height words also
+		adc	dx,0
+
+		push	dx
+		push	ax
+		call 	far ptr _myfarmalloc	; allocate memory for pop-ups
+		pop	cx
+		pop	cx
+
+		assume	ds:dialogdseg
+
+		mov	bx,seg dialogBack
+		mov	ds,bx
+		mov	word ptr dialogBack,ax
+		mov	word ptr dialogBack+2,dx
+
+		mov	cx,ax
+		or	cx,dx
+		jne	@@allocedOk
+		mov	ax,-1
+		jmp	@@alertExit
+@@allocedOk:
+		mov	es,dx
+		mov	di,ax
+		call	far ptr hideMouse
+		mov	cx,seg alertDialog
+		mov	dx,offset alertDialog
+		xor	si,si
+		mov	ax,dialogX
+		mov	bx,dialogY
+		call	far ptr savePopUpBack
+		
+		call	far ptr showMouse
+
+		mov	ax,TRUE			; yes system dialog
+		mov	bx,TRUE			; yes need to draw
+		mov	cx,seg alertDialog
+		mov	dx,offset alertDialog
+		call	far ptr doDialog
+
+		call	far ptr hideMouse
+		mov	ax,seg dialogX
+		mov	ds,ax
+		mov	ax,dialogX
+		mov	bx,dialogY
+		mov	cx,seg alertDialog
+		mov	dx,offset alertDialog
+		les	di,dialogBack
+		xor	si,si
+		call	far ptr restorePopUpBack
+		call	far ptr showMouse
+
+		mov	ax,word ptr dialogBack+2
+		push	ax
+		mov	ax,word ptr dialogBack
+		push	ax
+		call	far ptr _myfarfree
+		pop	ax
+		pop	ax
+
+		mov	ax,dialogExitObject
+@@alertExit:
+		popall
+		ret
+
+alert		endp
+
+;{----------------------------------------------------------------------}
+;{	doDialog:							}
+;{	  ax = TRUE if system dialog					}
+;{	  bx = TRUE if need to draw dialog				}
+;{	  cx:dx = pointer to Parent structure for dialog		}
+;{----------------------------------------------------------------------}
+doDialog	Proc	far
+
+		pushall
+		mov	si,seg dialogPtr
+		mov	ds,si
+		mov	word ptr dialogPtr,dx
+		mov	word ptr dialogPtr+2,cx
+
+		mov	sysDialogOn,ax
+		mov	MouseDialogPress,FALSE
+		mov	word ptr lastDialogObject,-1
+		mov	word ptr lastDialogObject+2,-1
+
+		or	bx,bx
+		je	@@DontDrawdialog
+		call	far ptr hideMouse
+
+		mov	ax,dialogX
+		mov	bx,dialogY
+		call	far ptr drawObjects	; draw the dialog
+
+		call	far ptr showMouse
+@@DontDrawdialog:
+		mov	dialogOn,TRUE
+		mov	endDialog,FALSE		; dont end dialog yet
+
+@@doDialogLoop:
+		call	far ptr waitForEvent	; wait for event to happen
+
+		mov	bp,ax
+		mov	ax,seg EVENTHANDLER
+		xor	bx,bx
+		mov	cx,"VE"
+		mov	dx,"AH"
+		call	far ptr ExecuteRtns	; call event handler routines
+
+		cmp	endDialog,TRUE
+		jne	@@doDialogLoop
+		
+		popall
+		ret
+
+doDialog	Endp
+
+;{----------------------------------------------------------------------}
+;{	dialogDeviceEvent:						}
+;{	  come here when a system message is received			}
+;{									}
+;{	parameters:							}
+;{	  ah = device #							}
+;{	  al = bits for device						}
+;{----------------------------------------------------------------------}
+dialogDeviceEvent Proc	far
+
+		pushall
+
+		mov	cx,seg dialogOn
+		mov	ds,cx
+		cmp	dialogOn,TRUE
+		je	@@DialogOn
+		jmp	@@ExitDialog
+@@DialogOn:
+		cmp	ah,MOUSEDEVICE		; mouse device event?
+		je	@@IsMouseEvent
+		jmp	@@NotMouseEvent
+@@IsMouseEvent:
+		cmp	al,MBUTTON1PRESS	; button pressed?
+		jne	@@NotMouseDown
+		mov	MouseDialogPress,TRUE	; then set flag
+@@NotMouseDown:
+		cmp	al,MBUTTON1RELEASE	; button released?
+		jne	@@NotMouseUp
+		mov	MouseDialogPress,FALSE	; then reset flag
+@@NotMouseUp:
+		push	ax
+		push	ds
+		mov	ax,dialogX		; get x & y of dialog
+		mov	bx,dialogY
+		mov	cx,word ptr dialogPtr+2	; and pointer
+		mov	dx,word ptr dialogPtr
+		assume	ds:DGROUP
+		mov	si,seg DGROUP
+		mov	ds,si
+		mov	bp,_mouseX		; get mouse x & y
+		mov	si,_mouseY
+		mov	di,OBJ_SELECTABLE
+		pop	ds
+		assume	ds:dialogdseg
+		call	far ptr ptInObject	; see if mouse points to object
+		pop	bp			; recover device bits
+		and	bp,0ffh
+@@ObjectFound:
+		cmp	MouseDialogPress,TRUE	; see if mouse pressed
+		jne	@@NotDialogPress	; nope
+		cmp	cx,-1
+		jne	@@DialogPress
+		cmp	dx,-1
+		je	@@NotDialogPress	; is mouse over selectable item
+@@DialogPress:
+		call	far ptr DialogPress
+		jmp	@@ExitDialog
+@@NotDialogPress:
+		call	far ptr deselLastObject	; deselect last object if not same
+		or	ax,ax
+		je	@@NoObjectFound
+@@MouseInObject:
+		cmp	MouseDialogPress,TRUE
+		je	@@NoObjectFound
+		cmp	cx,-1
+		jne	@@ObjectRelease
+		cmp	dx,-1
+		je	@@NoObjectFound
+@@ObjectRelease:
+		mov	di,seg tMsgQueue
+		mov	es,di
+		mov	di,offset tMsgQueue
+		mov	ah,DIALOGDEVICE
+		mov	al,DIALOGITEMRELEASE	; send object pressed/released
+		stosw
+		mov	ax,bp
+		stosw
+		mov	ax,2
+		push	si
+		push	ds
+		push	es
+		pop	ds
+		mov	si,offset tMsgQueue
+		call	far ptr addMsgBuff
+		pop	ds
+		pop	si
+@@NoObjectFound:
+
+@@ExitDialog:
+@@NotMouseEvent:
+		xor	ax,ax
+		popall
+		ret
+
+dialogDeviceEvent Endp
+
+
+
+;{----------------------------------------------------------------------}
+;{ Function:	DialogPress						}
+;{ Description:	select dialog item and send object redraw 		}
+;{ Parameters:	ax = x position						}
+;{		bx = y position						}
+;{		cx:dx = object pointer					}
+;{ Returns:	.							}
+;{----------------------------------------------------------------------}
+DialogPress	Proc	far
+
+		push	ax
+		push	bx
+		push	cx
+		push	dx
+		call	far ptr deselLastObject
+		pop	dx
+		pop	cx
+		pop	bx
+		pop	ax
+		mov	lastObjectX,ax
+		mov	lastObjectY,bx
+		cmp	dx,word ptr lastDialogObject
+		jne	@@NewObject
+		cmp	cx,word ptr lastDialogObject+2
+		je	@@NotDialogPress
+@@NewObject:
+		mov	word ptr lastDialogObject,dx
+		mov	word ptr lastDialogObject+2,cx
+		mov	bp,ax
+		mov	ax,seg tMsgQueue
+		mov	es,ax
+		mov	di,offset tMsgQueue	; send message to select object
+		mov	ah,OBJECTDEVICE
+		mov	al,OBJSELECT
+		stosw
+		mov	ax,bp			; send x
+		stosw
+		mov	ax,bx			; and y
+		stosw
+		mov	ax,dx
+		stosw
+		mov	ax,cx
+		stosw
+		mov	ax,5
+		push	si
+		push	ds
+		push	es
+		pop	ds
+		mov	si,offset tMsgQueue
+		call	far ptr addMsgBuff
+		pop	ds
+		pop	si
+		mov	di,offset tMsgQueue
+		mov	ds,cx
+		mov	si,dx
+		mov	bp,[si].objID
+		mov	ah,DIALOGDEVICE
+		mov	al,DIALOGITEMPRESS	; send object pressed/released
+		stosw
+		mov	ax,bp
+		stosw
+		mov	ax,2
+		push	si
+		push	ds
+		push	es
+		pop	ds
+		mov	si,offset tMsgQueue
+		call	far ptr addMsgBuff
+		pop	ds
+		pop	si
+@@NotDialogPress:
+		ret
+
+dialogPress	Endp
+;
+;
+;
+deselLastObject	Proc	far
+
+		mov	si,seg lastDialogObject
+		mov	ds,si
+		les	si,lastDialogObject	; get last object pointer
+		mov	bp,es:[si].objID	; and id for object
+		xor	ax,ax			; no last object
+		cmp	word ptr lastDialogObject,-1
+		jne	@@LastObjectAvail
+		cmp	word ptr lastDialogObject+2,-1
+		je	@@NoObjectFound		; nope
+@@LastObjectAvail:
+		mov	ax,seg tMsgQueue
+		mov	es,ax
+		mov	di,offset tMsgQueue	; pointer to temp msg queue
+		cmp	MouseDialogPress,FALSE	; see if mouse released
+		je	@@MouseRelease		; yes, then deselect last object
+		xor	ax,ax
+		cmp	dx,word ptr lastDialogObject
+		jne	@@MouseRelease		; still in last object?
+		cmp	cx,word ptr lastDialogObject+2
+		je	@@NoObjectFound
+@@MouseRelease:
+		mov	ah,OBJECTDEVICE		; deselect last object selected
+		mov	al,OBJDESELECT
+		stosw
+		mov	ax,lastObjectX		; send object X
+		stosw
+		mov	ax,lastObjectY		; and Y
+		stosw
+		mov	dx,word ptr lastDialogObject
+		mov	ax,dx
+		stosw				; and pointer to object
+		mov	cx,word ptr lastDialogObject+2
+		mov	ax,cx
+		stosw
+		mov	di,offset tMsgQueue	; pointer to temp msg queue
+		mov	ah,OBJECTDEVICE		; deselect last object selected
+		mov	al,OBJDESELECT
+		cmp	es:tMsgQueue,ax
+		jne	@@Error1
+		mov	ax,lastObjectX
+		cmp	es:tMsgQueue+2,ax
+		jne	@@Error1
+		mov	ax,lastObjectY
+		cmp	es:tMsgQueue+4,ax
+		jne	@@Error1
+		cmp	es:tMsgQueue+6,dx
+		jne	@@Error1
+		cmp	es:tMsgQueue+8,cx
+		je	@@NoError1
+@@Error1:
+		nop
+		nop
+@@NoError1:
+
+		mov	ax,5
+		push	si
+		push	ds
+		push	es
+		pop	ds
+		mov	si,offset tMsgQueue
+		call	far ptr addMsgBuff
+		pop	ds
+		pop	si
+		mov	word ptr lastDialogObject,-1
+		mov	word ptr lastDialogObject+2,-1
+		mov	ax,1
+@@NoObjectFound:
+		ret
+
+deselLastObject	Endp
+
+;{----------------------------------------------------------------------}
+;{	dialogItemEvent:						}
+;{	  come here when a dialog item is messed with			}
+;{									}
+;{	parameters:							}
+;{	  ah = device #							}
+;{	  al = bits for device						}
+;{----------------------------------------------------------------------}
+dialogItemEvent	Proc	far
+
+		cmp	al,DIALOGITEMRELEASE
+		jne	@@NotMyEvent
+
+		push	ax
+		push	ds
+
+		mov	ax,seg dialogExitObject
+		mov	ds,ax
+		call	far ptr getTempMsgWord
+
+		cmp	ax,OK_BUTTON
+		je	@@ExitButton
+		cmp	ax,CANCEL_BUTTON
+		jne	@@DIEExit
+@@ExitButton:
+		mov	dialogExitObject,ax
+
+		mov	ah,DIALOGDEVICE
+		mov	al,DIALOGCLOSE
+		call	far ptr addMsgQueue
+@@DIEExit:
+		pop	ds
+		pop	ax
+@@NotMyEvent:
+		xor	ax,ax
+		ret
+
+dialogItemEvent	Endp
+
+;{----------------------------------------------------------------------}
+;{	dialogCloseEvent:						}
+;{	  come here when a dialog needs closing				}
+;{									}
+;{	parameters:							}
+;{	  ah = device #							}
+;{	  al = bits for device						}
+;{----------------------------------------------------------------------}
+dialogCloseEvent Proc	far
+
+		pushall
+
+		mov	bx,seg endDialog
+		mov	ds,bx
+
+		cmp	al,DIALOGCLOSE
+		jne	@@NotMyEvent
+
+		cmp	sysDialogOn,TRUE	; did we save background
+		je	@@NoRefresh
+
+		mov	di,seg tMsgQueue
+		mov	es,di
+		mov	di,offset tMsgQueue	; load up queue address
+
+		mov	ax,offset tempRect	; just to include refresh module
+		mov	ah,REFRESHDEVICE
+		mov	al,REDRAW_SYSRECT
+		stosw
+
+		mov	ax,dialogX
+		stosw
+		mov	ax,dialogY
+		stosw
+		mov	dx,word ptr dialogPtr
+		mov	cx,word ptr dialogPtr+2
+		call	far ptr sizeObjects
+
+		stosw
+		mov	ax,bx
+		stosw
+
+		mov	ax,1
+		stosw				; say to include last window
+
+		push	si
+		push	ds
+		mov	si,seg tMsgQueue
+		mov	ds,si
+		mov	si,offset tMsgQueue
+		mov	ax,6
+		call	far ptr addMsgBuff	; store up refresh rectagle
+		pop	ds
+		pop	si
+@@noRefresh:
+
+		mov	endDialog,TRUE
+		mov	sysDialogOn,FALSE
+		mov	dialogOn,FALSE
+@@NotMyEvent:
+		xor	ax,ax
+		popall
+		ret
+
+dialogCloseEvent Endp
+
+;{----------------------------------------------------------------------}
+;{	dialogActiveEvent:						}
+;{	  come here when a dialog is active and gets a message		}
+;{									}
+;{	parameters:							}
+;{	  ah = device #							}
+;{	  al = bits for device						}
+;{----------------------------------------------------------------------}
+dialogActiveEvent Proc	far
+
+		pushall
+
+		mov	bx,seg dialogOn
+		mov	ds,bx
+
+		cmp	dialogOn,TRUE
+		jne	@@NoDialogOn
+
+		cmp	ah,KEYBOARDDEVICE
+		jne	@@NotKeyboard
+		cmp	al,KEYBOARDRELEASE
+		jne	@@NotKeyRelease
+		call	far ptr deselLastObject	; deselect last object if not same
+		jmp	@@NotKeyboard
+@@NotKeyRelease:
+		cmp	al,KEYBOARDPRESS
+		jne	@@NotKeyboard
+		mov	ah,INPSTAT		; see if convert to code
+		int	MSDOS
+		cmp	al,0ffh	
+		jne	@@NotKeyBoard
+		mov	ah,UNFCHRIN
+		int	MsDos
+		and	ax,0ffh
+		jne	@@NotMultiKey
+		mov	ah,UNFCHRIN
+		int	MsDos
+		mov	ah,al
+		xor	al,al
+@@NotMultiKey:
+		cmp	ax,ENTERKEY
+		jne	@@NotEnterKey
+		mov	cx,OK_BUTTON
+		jmp	@@findID
+@@NotEnterKey:
+		cmp	ax,ESCAPEKEY
+		jne	@@NotKeyboard
+		mov	cx,CANCEL_BUTTON
+@@FindID:
+		mov	ax,cx
+		mov	dx,word ptr dialogPtr
+		mov	cx,word ptr dialogPtr+2
+		call	far ptr findObjectID
+		cmp	dx,-1
+		jne	@@foundit
+		cmp	cx,-1
+		je	@@NotKeyboard
+@@foundit:
+		add	ax,dialogX
+		add	bx,dialogY
+		call	far ptr DialogPress
+
+		call	far ptr deselLastObject	; deselect last object
+		mov	di,seg tMsgQueue
+		mov	es,di
+		mov	di,offset tMsgQueue
+		mov	ah,DIALOGDEVICE
+		mov	al,DIALOGITEMRELEASE	; send object pressed/released
+		stosw
+		mov	ax,bp
+		stosw
+		mov	ax,2
+		push	si
+		push	ds
+		push	es
+		pop	ds
+		mov	si,offset tMsgQueue
+		call	far ptr addMsgBuff
+		pop	ds
+		pop	si
+		jmp	@@NoDialogOn
+@@NotKeyboard:
+		call	far ptr clearMessageParms
+		popall
+		mov	ax,1
+		ret
+@@NoDialogOn:
+		popall
+		xor	ax,ax
+		ret
+
+dialogActiveEvent Endp
+
+dialogcseg	Ends
+
+		end
+

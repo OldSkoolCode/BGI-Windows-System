@@ -1,0 +1,48 @@
+head	1.1;
+access;
+symbols;
+locks
+	KENH:1.1; strict;
+comment	@# @;
+
+
+1.1
+date	93.04.23.21.55.39;	author KENH;	state Exp;
+branches;
+next	;
+
+
+desc
+@@
+
+
+1.1
+log
+@Initial revision
+@
+text
+@;{----------------------------------------------------------------------}
+;{	SHAPS.inc shape and animation equates				}
+;{	COPYRIGHT 1989 Monarch Development				}
+;{----------------------------------------------------------------------}
+
+		ifndef	equatesinc
+		include	equates.inc
+		endif
+
+refreshinc	equ	1
+
+		ifndef	grafinc
+		include	graf.inc
+		endif
+
+		ifndef	rastinc
+		include	rast.inc
+		endif
+
+;
+; -----	global definitions
+;
+		global	refresh:far
+
+@

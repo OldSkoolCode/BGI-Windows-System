@@ -1,0 +1,104 @@
+head	1.1;
+access;
+symbols;
+locks
+	KENH:1.1; strict;
+comment	@; @;
+
+
+1.1
+date	93.04.23.21.10.21;	author KENH;	state Exp;
+branches;
+next	;
+
+
+desc
+@@
+
+
+1.1
+log
+@Initial revision
+@
+text
+@; $Header$
+
+;{----------------------------------------------------------------------}
+;{	MSDOS math library routines					}
+;{	Copyright (C) 1989 Monarch Development Inc.			}
+;{	Written by Kenneth L. Hurley					}
+;{	Started	4-1-1989						}
+;{	Written with Turbo Assembler ver 1.0				}
+;{----------------------------------------------------------------------}
+
+; $Log$
+
+		include	math.inc
+
+		locals
+
+cmath		Segment Public 'CODE'
+
+		assume	cs:cmath
+
+;{----------------------------------------------------------------------}
+;{ Function:	divU32							}
+;{ Description:	divide a 32 bit number by a 32 bit number		}
+;{ Parameters:	dx:ax = 32 unsigned bit dividend			}
+;{		cx:bx = 32 unsigned bit divisor				}
+;{ Returns:	dx:ax = answer						}
+;{----------------------------------------------------------------------}
+divU32		Proc	Far
+
+		push	bx
+		push	cx
+		push	si
+		push	di
+		or	cx,cx		; see if cx:bx != 0
+		jnz	chksign		; if doesn't = 0 so bypass
+		or	dx,dx		; if dx = 0
+		jz	do16bitdiv	; just do 16 bit divide
+		or	bx,bx		; divide by zero?
+		jz	ldivexit
+chksign:
+		mov	bp,cx     	; save for later
+		mov	cx,32		; number of bits
+		xor	di,di
+		xor	si,si		; initial answer
+divLoop:
+		shl	ax,1      
+		rcl	dx,1      
+		rcl	si,1
+		rcl	di,1      
+		cmp	di,bp
+		jb	nextdivLoop
+		ja	reduceDividend
+		cmp	si,bx     
+		jb	nextdivLoop
+reduceDividend:
+		sub	si,bx     
+		sbb	di,bp     
+		inc	ax
+nextdivLoop:
+		loop	divLoop
+;		mov	ax,si		; put answer in ax:dx    
+;		mov	dx,di
+		jmp	short ldivExit
+do16bitdiv:
+		div	bx        
+		xor	dx,dx     
+		jmp	ldivexit
+
+ldivExit:
+		pop	di
+		pop	si
+		pop	cx
+		pop	bx
+		ret
+
+divU32		Endp
+
+cmath		Ends
+
+		end
+@

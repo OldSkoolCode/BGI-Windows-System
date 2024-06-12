@@ -1,0 +1,780 @@
+; Clip.asm,  Fast Clipper (FC).
+
+; A modified implementation of the Sobkow-Pospisil-Yang clipping algorithm.
+; References: Computers & Graphics, Vol. 11. No. 4, pp. 459-467, 1987.
+
+; This algorithm uses line encoding as opposed to end point encoding.
+
+; Created 19-Nov-89
+; by John C. Schultz
+
+
+;
+;
+; Successfully assembled with Lattice 5.04 asm, CAPE 2.0, and Devpac 2.14.
+
+
+	section Clip,CODE
+
+	xdef	_minX
+	xdef	_maxX
+	xdef	_minY
+	xdef	_maxY
+	xdef	_clipline
+
+; User definable clipping window.
+
+_minX	dc.w	0		; Popular defaults
+_maxX	dc.w	319
+_minY	dc.w	0
+_maxY	dc.w	199
+
+; code size can be reduced (with a loss of speed) by using
+; bra's and bsr's instead of complete inline expanded macros.
+
+; ClipEdge: \2 = result, d0,d1 are scratched
+CLIPEDGE	MACRO		; comments as per clip minX edge:
+	move.w	\1,d0		;   copy p.y
+	sub.w	\2,d0		;   d0 = p.y - s.y
+	move.w	\3,d1		;   copy _minX(pc)
+	sub.w	\4,d1		;   d1 = _minX(pc) - s.x
+	muls	d0,d1		;   d1 = (p.y - s.y)*(_minX(pc) - s.x)
+	move.w	\5,d0		;   copy p.x
+	sub.w	\4,d0		;   d0 = p.x - s.x
+	divs	d0,d1		;   d1 = deltay
+	add.w	d1,\2		;   \2 = deltay + s.y
+		ENDM
+
+clippmaxY	macro
+	CLIPEDGE d4,d2,_maxY(pc),d3,d5
+	move.w	_maxY(pc),d3
+		endm
+
+clippminY	macro
+	CLIPEDGE d4,d2,_minY(pc),d3,d5
+	move.w	_minY(pc),d3
+		endm
+
+clippmaxX	macro
+	CLIPEDGE d5,d3,_maxX(pc),d2,d4
+	move.w	_maxX(pc),d2
+		endm
+
+clippminX	macro
+	CLIPEDGE d5,d3,_minX(pc),d2,d4
+	move.w	_minX(pc),d2
+		endm
+
+clipqmaxY	macro
+	CLIPEDGE d2,d4,_maxY(pc),d5,d3
+	move.w	_maxY(pc),d5
+		endm
+
+clipqminY	macro
+	CLIPEDGE d2,d4,_minY(pc),d5,d3
+	move.w	_minY(pc),d5
+		endm
+
+clipqmaxX	macro
+	CLIPEDGE d3,d5,_maxX(pc),d4,d2
+	move.w	_maxX(pc),d4
+		endm
+
+clipqminX	macro
+	CLIPEDGE d3,d5,_minX(pc),d4,d2
+	move.w	_minX(pc),d4
+		endm
+
+accept	macro
+	movem.w	d2/d3/d4/d5,(a0)
+	moveq.l	#1,d0
+	movem.l	(sp)+,d2-d5
+	rts
+	endm
+
+reject	macro
+	moveq.l	#0,d0
+	movem.l	(sp)+,d2-d5
+	rts
+	endm
+
+
+; Fast Clipper (FC) line clipping algorithm.
+; a0 = line pointer, format: px,py,qx,qy.
+; d0 = return value, 1 = visible, 0 = invisible
+_clipline
+	movem.l	d2-d5,-(sp)
+
+	movem.w	(a0),d2/d3/d4/d5 ; px,py,qx,qy
+
+; px = d2
+; py = d3
+; qx = d4
+; qy = d5
+
+	moveq.l	#0,d1		; clear line code
+
+; There might be a way to do the following using ROXL, with no
+; branches (10 cycles a pop)...
+
+; check qx,qy.
+
+checkqmaxY
+	cmp.w	_maxY(pc),d5	; y maxY ok?
+	ble.b	checkqminY	; yes.
+	addq.w	#8,d1		; else set code bit
+	bra.b	checkqmaxX
+checkqminY
+	cmp.w	_minY(pc),d5	; y minY ok?
+	bge.b	checkqmaxX	; yes.
+	addq.w	#4,d1		; else set code bit
+checkqmaxX
+	cmp.w	_maxX(pc),d4	; x maxX ok?
+	ble.b	checkqminX	; yes
+	addq.w	#2,d1		; else set code bit
+checkqminX
+	cmp.w	_minX(pc),d4	; x minX ok?
+	bge.b	checkpmaxY	; yes
+	addq.w	#1,d1		; else set code bit
+
+; check px,py.
+
+checkpmaxY
+	cmp.w	_maxY(pc),d3	; y maxY ok?
+	ble.b	checkpminY	; yes.
+	add.w	#128,d1		; else set code bit
+	bra.b	checkpmaxX
+checkpminY
+	cmp.w	_minY(pc),d3	; y minY ok?
+	bge.b	checkpmaxX	; yes.
+	add.w	#64,d1		; else set code bit
+checkpmaxX
+	cmp.w	_maxX(pc),d2	; x maxX ok?
+	ble.b	checkpminX	; yes
+	add.w	#32,d1		; else set code bit
+checkpminX
+	cmp.w	_minX(pc),d2	; x minX ok?
+	bge.b	checkcode	; yes
+	add.w	#16,d1		; else set code bit
+
+checkcode
+	add.w	d1,d1		; entries are 4 bytes
+	add.w	d1,d1
+	lea	casetable(pc),a1
+	movea.l	0(a1,d1.w),a1
+	jmp	(a1)		; perform specific clipping action.
+
+; Specific line case functions.
+
+; From the Center
+
+case00	accept
+case01	clipqminX
+	accept
+case02	clipqmaxX
+	accept
+case04	clipqminY
+	accept
+case05	clipqminX
+	cmp.w	_minY(pc),d5	; qy < minY?
+	bge.b	1$
+	clipqminY
+1$	accept
+case06	clipqmaxX
+	cmp.w	_minY(pc),d5	; qy < minY?
+	bge.b	1$
+	clipqminY
+1$	accept
+case08	clipqmaxY
+	accept
+case09	clipqminX
+	cmp.w	_maxY(pc),d5	; qy > maxY?
+	ble.b	1$
+	clipqmaxY
+1$	accept
+case0A	clipqmaxX
+	cmp.w	_maxY(pc),d5	; qy > maxY?
+	ble.b	1$
+	clipqmaxY
+1$	accept
+
+; From the minX
+
+case10	clippminX
+	accept
+case11	reject
+case12	clippminX
+	clipqmaxX
+	accept
+case14	clippminX
+	cmp.w	_minY(pc),d3	; py < minY?
+	bge.b	1$
+	reject
+1$	clipqminY
+	accept
+case15	reject
+case16	clippminX
+	cmp.w	_minY(pc),d3	; py < minY?
+	bge.b	1$
+	reject
+1$	clipqminY
+	cmp.w	_maxX(pc),d4	; qx > maxX?
+	ble.b	2$
+	clipqmaxX
+2$	accept
+case18	clippminX
+	cmp.w	_maxY(pc),d3	; py > maxY?
+	ble.b	1$
+	reject
+1$	clipqmaxY
+	accept
+case19	reject
+case1A	clippminX
+	cmp.w	_maxY(pc),d3	; py > maxY?
+	ble.b	1$
+	reject
+1$	clipqmaxY
+	cmp.w	_maxX(pc),d4	; qx > maxX?
+	ble.b	2$
+	clipqmaxX
+2$	accept
+
+; From maxX
+
+case20	clippmaxX
+	accept
+case21	clippmaxX
+	clipqminX
+	accept
+case22	reject
+case24	clippmaxX
+	cmp.w	_minY(pc),d3	; py < minY?
+	bge.b	1$
+	reject
+1$	clipqminY
+	accept
+case25	clippmaxX
+	cmp.w	_minY(pc),d3	; py < minY?
+	bge.b	1$
+	reject
+1$	clipqminY
+	cmp.w	_minX(pc),d4	; qx < minX?
+	bge.b	2$
+	clipqminX
+2$	accept
+case26	reject
+case28	clippmaxX
+	cmp.w	_maxY(pc),d3	; py > maxY?
+	ble.b	1$
+	reject
+1$	clipqmaxY
+	accept
+case29	clippmaxX
+	cmp.w	_maxY(pc),d3	; py > maxY?
+	ble.b	1$
+	reject
+1$	clipqmaxY
+	cmp.w	_minX(pc),d4	; qx < minX?
+	bge.b	2$
+	clipqminX
+2$	accept
+case2A	reject
+
+; From minY
+
+case40	clippminY
+	accept
+case41	clippminY
+	cmp.w	_minX(pc),d2	; px < minX?
+	bge.b	1$
+	reject
+1$	clipqminX
+	cmp.w	_minY(pc),d5	; qy < minY?
+	bge.b	2$
+	clipqminY
+2$	accept
+case42	clippminY
+	cmp.w	_maxX(pc),d2	; px > maxX?
+	ble.b	1$
+	reject
+1$	clipqmaxX
+	accept
+case44	; reject
+case45	; reject
+case46	reject
+case48	clippminY
+	clipqmaxY
+	accept
+case49	clippminY
+	cmp.w	_minX(pc),d2	; px < minX?
+	bge.b	1$
+	reject
+1$	clipqminX
+	cmp.w	_maxY(pc),d5	; qy > maxY?
+	ble.b	2$
+	clipqmaxY
+2$	accept
+case4A	clippminY
+	cmp.w	_maxX(pc),d2	; px > maxX?
+	ble.b	1$
+	reject
+1$	clipqmaxX
+	cmp.w	_maxY(pc),d5	; qy > maxY?
+	ble.b	2$
+	clipqmaxY
+2$	accept
+
+; From Lower minX
+
+case50	clippminX
+	cmp.w	_minY(pc),d3	; py < minY?
+	bge.b	1$
+	clippminY
+1$	accept
+case51	reject
+case52	clipqmaxX
+	cmp.w	_minY(pc),d5	; qy < minY?
+	bge.b	1$
+	reject
+1$	clippminY
+	cmp.w	_minX(pc),d2	; px < minX?
+	bge.b	2$
+	clippminX
+2$	accept
+case54  ; reject
+case55	; reject
+case56	reject
+case58	clipqmaxY
+	cmp.w	_minX(pc),d4	; qx < minX?
+	bge.b	1$
+	reject
+1$	clippminY
+	cmp.w	_minX(pc),d2	; px < minX?
+	bge.b	2$
+	clippminX
+2$	accept
+case59	reject
+case5A	clippminX
+	cmp.w	_maxY(pc),d3	; py > maxY?
+	ble.b	1$
+	reject
+1$	clipqmaxX
+	cmp.w	_minY(pc),d5	; qy < minY?
+	bge.b	2$
+	reject
+2$	cmp.w	_minY(pc),d3	; py < minY?
+	bge.b	3$
+	clippminY
+3$	cmp.w	_maxY(pc),d5	; qy > maxY?
+	ble.b	4$
+	clipqmaxY
+4$	accept
+
+; From Lower maxX
+
+case60	clippmaxX
+	cmp.w	_minY(pc),d3	; py < minY?
+	bge.b	1$
+	clippminY
+1$	accept
+case61	clipqminX
+	cmp.w	_minY(pc),d5	; qy < minY?
+	bge.b	1$
+	reject
+1$	clippminY
+	cmp.w	_maxX(pc),d2	; px > maxX?
+	ble.b	2$
+	clippmaxX
+2$	accept
+case62	; reject
+case64	; reject
+case65	; reject
+case66	reject
+case68	clipqmaxY
+	cmp.w	_maxX(pc),d4	; qx > maxX?
+	ble.b	1$
+	reject
+1$	clippmaxX
+	cmp.w	_minY(pc),d3	; py < minY?
+	bge.b	2$
+	clippminY
+2$	accept
+case69	clipqminX
+	cmp.w	_minY(pc),d5	; qy < minY?
+	bge.b	1$
+	reject
+1$	clippmaxX
+	cmp.w	_maxY(pc),d3	; py > maxY?
+	ble.b	2$
+	reject
+2$	cmp.w	_maxY(pc),d5	; qy > maxY?
+	ble.b	3$
+	clipqmaxY
+3$	cmp.w	_minY(pc),d3	; py < minY?
+	bge.b	4$
+	clippminY
+4$	accept
+case6A	reject
+
+; From maxY
+
+case80	clippmaxY
+	accept
+case81	clippmaxY
+	cmp.w	_minX(pc),d2	; px < minX?
+	bge.b	1$
+	reject
+1$	clipqminX
+	accept
+case82	clippmaxY
+	cmp.w	_maxX(pc),d2	; px > maxX?
+	ble.b	1$
+	reject
+1$	clipqmaxX
+	accept
+case84	clippmaxY
+	clipqminY
+	accept
+case85	clippmaxY
+	cmp.w	_minX(pc),d2	; px < minX?
+	bge.b	1$
+	reject
+1$	clipqminX
+	cmp.w	_minY(pc),d5	; qy < minY?
+	bge.b	2$
+	clipqminY
+2$	accept
+case86	clippmaxY
+	cmp.w	_maxX(pc),d2	; px > maxX?
+	ble.b	1$
+	reject
+1$	clipqmaxX
+	cmp.w	_minY(pc),d5	; qy < minY?
+	bge.b	2$
+	clipqminY
+2$	accept
+case88	; reject
+case89	; reject
+case8A	reject
+
+; From Upper minX
+
+case90	clippminX
+	cmp.w	_maxY(pc),d3	; py > maxY?
+	ble.b	1$
+	clippmaxY
+1$	accept
+case91	reject
+case92	clipqmaxX
+	cmp.w	_maxY(pc),d5	; qy > maxY?
+	ble.b	1$
+	reject
+1$	clippmaxY
+	cmp.w	_minX(pc),d2	; px < minX?
+	bge.b	2$
+	clippminX
+2$	accept
+case94	clipqminY
+	cmp.w	_minX(pc),d4	; qx < minX?
+	bge.b	1$
+	reject
+1$	clippminX
+	cmp.w 	_maxY(pc),d3	; py > maxY?
+	ble.b	2$
+	clippmaxY
+2$	accept
+case95	reject
+case96	clippminX
+	cmp.w	_minY(pc),d3	; py < minY?
+	bge.b	1$
+	reject
+1$	clipqmaxX
+	cmp.w	_maxY(pc),d5	; qy > maxY?
+	ble.b	2$
+	reject
+2$	cmp.w	_maxY(pc),d3	; py > maxY?
+	ble.b	3$
+	clippmaxY
+3$	cmp.w	_minY(pc),d5	; qy < minY
+	bge.b	4$
+	clipqminY
+4$	accept
+case98	; reject
+case99	; reject
+case9A	reject
+
+; From Upper maxX
+
+caseA0	clippmaxX
+	cmp.w	_maxY(pc),d3	; py > maxY?
+	ble.b	1$
+	clippmaxY
+1$	accept
+caseA1	clipqminX
+	cmp.w	_maxY(pc),d5	; qy > maxY?
+	ble.b	1$
+	reject
+1$	clippmaxY
+	cmp.w	_maxX(pc),d2	; px > maxX?
+	ble.b	2$
+	clippmaxX
+2$	accept
+caseA2	reject
+caseA4	clipqminY
+	cmp.w	_maxX(pc),d4	; qx > maxX?
+	ble.b	1$
+	reject
+1$	clippmaxX
+	cmp.w	_maxY(pc),d3	; py > maxY?
+	ble.b	2$
+	clippmaxY
+2$	accept
+caseA5	clipqminX
+	cmp.w	_maxY(pc),d5	; qy > maxY?
+	ble.b	1$
+	reject
+1$	clippmaxX
+	cmp.w	_minY(pc),d3	; py < minY?
+	bge.b	2$
+	reject
+2$	cmp.w	_minY(pc),d5	; qy < minY?
+	bge.b	3$
+	clipqminY
+3$	cmp.w	_maxY(pc),d3	; py > maxY?
+	ble.b	4$
+	clippmaxY
+4$	accept
+caseA6	; reject
+caseA8	; reject
+caseA9	; reject
+caseAA	reject
+
+dummycase reject
+	
+casetable
+	dc.l	case00
+	dc.l	case01
+	dc.l	case02
+
+	dc.l	dummycase ; 03
+
+	dc.l	case04
+	dc.l	case05
+	dc.l	case06
+
+	dc.l	dummycase ; 07
+
+	dc.l	case08
+	dc.l	case09
+	dc.l	case0A
+
+	dc.l	dummycase ; 0B 
+	dc.l	dummycase ; 0C
+	dc.l	dummycase ; 0D
+	dc.l	dummycase ; 0E 
+	dc.l	dummycase ; 0F
+
+	dc.l	case10
+	dc.l	case11
+	dc.l	case12
+
+	dc.l	dummycase ; 13
+
+	dc.l	case14
+	dc.l	case15
+	dc.l	case16
+
+	dc.l	dummycase ; 17
+
+	dc.l	case18
+	dc.l	case19
+	dc.l	case1A
+
+	dc.l	dummycase ; 1B 
+	dc.l	dummycase ; 1C
+	dc.l	dummycase ; 1D
+	dc.l	dummycase ; 1E 
+	dc.l	dummycase ; 1F
+
+	dc.l	case20
+	dc.l	case21
+	dc.l	case22
+
+	dc.l	dummycase ; 23
+
+	dc.l	case24
+	dc.l	case25
+	dc.l	case26
+
+	dc.l	dummycase ; 27
+
+	dc.l	case28
+	dc.l	case29
+	dc.l	case2A
+
+	dc.l	dummycase ; 2B 
+	dc.l	dummycase ; 2C
+	dc.l	dummycase ; 2D
+	dc.l	dummycase ; 2E 
+	dc.l	dummycase ; 2F
+	dc.l	dummycase ; 30 
+	dc.l	dummycase ; 31
+	dc.l	dummycase ; 32
+	dc.l	dummycase ; 33 
+	dc.l	dummycase ; 34
+	dc.l	dummycase ; 35 
+	dc.l	dummycase ; 36
+	dc.l	dummycase ; 37
+	dc.l	dummycase ; 38 
+	dc.l	dummycase ; 39
+	dc.l	dummycase ; 3A
+	dc.l	dummycase ; 3B 
+	dc.l	dummycase ; 3C
+	dc.l	dummycase ; 3D
+	dc.l	dummycase ; 3E 
+	dc.l	dummycase ; 3F
+
+	dc.l	case40
+	dc.l	case41
+	dc.l	case42
+
+	dc.l	dummycase ; 43
+
+	dc.l	case44
+	dc.l	case45
+	dc.l	case46
+
+	dc.l	dummycase ; 47
+
+	dc.l	case48
+	dc.l	case49
+	dc.l	case4A
+
+	dc.l	dummycase ; 4B 
+	dc.l	dummycase ; 4C
+	dc.l	dummycase ; 4D
+	dc.l	dummycase ; 4E 
+	dc.l	dummycase ; 4F
+
+	dc.l	case50
+	dc.l	case51
+	dc.l	case52
+
+	dc.l	dummycase ; 53
+
+	dc.l	case54
+	dc.l	case55
+	dc.l	case56
+
+	dc.l	dummycase ; 57
+
+	dc.l	case58
+	dc.l	case59
+	dc.l	case5A
+
+	dc.l	dummycase ; 5B 
+	dc.l	dummycase ; 5C
+	dc.l	dummycase ; 5D
+	dc.l	dummycase ; 5E 
+	dc.l	dummycase ; 5F
+
+	dc.l	case60
+	dc.l	case61
+	dc.l	case62
+
+	dc.l	dummycase ; 63
+
+	dc.l	case64
+	dc.l	case65
+	dc.l	case66
+
+	dc.l	dummycase ; 67
+
+	dc.l	case68
+	dc.l	case69
+	dc.l	case6A
+
+	dc.l	dummycase ; 6B 
+	dc.l	dummycase ; 6C
+	dc.l	dummycase ; 6D
+	dc.l	dummycase ; 6E 
+	dc.l	dummycase ; 6F
+
+	dc.l	dummycase ; 70 
+	dc.l	dummycase ; 71
+	dc.l	dummycase ; 72
+	dc.l	dummycase ; 73 
+	dc.l	dummycase ; 74
+	dc.l	dummycase ; 75 
+	dc.l	dummycase ; 76
+	dc.l	dummycase ; 77
+	dc.l	dummycase ; 78 
+	dc.l	dummycase ; 79
+	dc.l	dummycase ; 7A
+	dc.l	dummycase ; 7B 
+	dc.l	dummycase ; 7C
+	dc.l	dummycase ; 7D
+	dc.l	dummycase ; 7E 
+	dc.l	dummycase ; 7F
+
+	dc.l	case80
+	dc.l	case81
+	dc.l	case82
+
+	dc.l	dummycase ; 83
+
+	dc.l	case84
+	dc.l	case85
+	dc.l	case86
+
+	dc.l	dummycase ; 87
+
+	dc.l	case88
+	dc.l	case89
+	dc.l	case8A
+
+	dc.l	dummycase ; 8B 
+	dc.l	dummycase ; 8C
+	dc.l	dummycase ; 8D
+	dc.l	dummycase ; 8E 
+	dc.l	dummycase ; 8F
+
+	dc.l	case90
+	dc.l	case91
+	dc.l	case92
+
+	dc.l	dummycase ; 93
+
+	dc.l	case94
+	dc.l	case95
+	dc.l	case96
+
+	dc.l	dummycase ; 97
+
+	dc.l	case98
+	dc.l	case99
+	dc.l	case9A
+
+	dc.l	dummycase ; 9B 
+	dc.l	dummycase ; 9C
+	dc.l	dummycase ; 9D
+	dc.l	dummycase ; 9E 
+	dc.l	dummycase ; 9F
+
+	dc.l	caseA0
+	dc.l	caseA1
+	dc.l	caseA2
+
+	dc.l	dummycase ; A3
+
+	dc.l	caseA4
+	dc.l	caseA5
+	dc.l	caseA6
+
+	dc.l	dummycase ; A7
+
+	dc.l	caseA8
+	dc.l	caseA9
+	dc.l	caseAA
+	
+	END

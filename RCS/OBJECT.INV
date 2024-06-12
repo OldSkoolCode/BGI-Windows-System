@@ -1,0 +1,213 @@
+head	1.1;
+access;
+symbols;
+locks
+	KENH:1.1; strict;
+comment	@# @;
+
+
+1.1
+date	93.04.23.21.55.39;	author KENH;	state Exp;
+branches;
+next	;
+
+
+desc
+@@
+
+
+1.1
+log
+@Initial revision
+@
+text
+@
+		ifndef	equatesinc
+		include	equates.inc
+		endif
+
+objectinc	equ	1
+
+		ifndef	memoryinc
+		include memory.inc
+		endif
+
+		ifndef	bgidevinc
+		include	bgidev.inc
+		endif
+
+		ifndef	mouseinc
+		include	mouse.inc
+		endif
+
+;
+; ----- Object definitions
+;
+OBJ_PARENT	equ	0
+OBJ_RECT	equ	1
+OBJ_STR		equ	2
+OBJ_BITMAP	equ	3
+OBJ_BAR		equ	4
+OBJ_CIRCLE	equ	5		; circle
+OBJ_LINE	equ	6
+OBJ_UNKNOWN	equ	7		; last known one so far
+
+;
+; -----	object flag equates
+;
+OBJ_DISABLED	equ	1		; is object lightened
+OBJ_SELECTED	equ	2		; is object selected
+OBJ_NOTIFY	equ	4		; notify for object change event
+OBJ_INVISIBLE	equ	8		; is object currently visible
+OBJ_MENU_TITLE	equ	16		; is object menu title
+OBJ_MENU	equ	32		; is object menu parent
+OBJ_MENU_ITEM	equ	64		; is object menu item
+OBJ_TOGGLE	equ	128		; selected toggles each mouse press
+OBJ_SELECTABLE	equ	256		; is object selectable?
+OBJ_EDITABLE	equ	512		; is object editable
+;
+; ----- string flag equates
+;
+STR_NORMAL	equ	0
+STR_LIGHTENED	equ	1
+STR_TOUPPER	equ	4		; only upper case allowed
+STR_TOLOWER	equ	8		; only lower case allowed
+;
+; -----	object types structure
+;
+object		struc
+objX		dw	?		; x position
+objY		dw	?		; y position
+objW		dw	?		; width of object when drawn (filled in?)
+objH		dw	?		; height of object when drawn
+objType		dw	?		; type of object
+objFlags	dw	?		; generic object flags
+objID		dw	?		; generic object ID
+objPtr		dd	?		; pointer to object
+object		ends
+
+;
+; ----- Parent object structure
+;
+objectParent	struc
+numObjects	dw	?		; number of objects in this list
+theObjects	object	<?>		; 1...numObjects
+objectParent	ends
+
+;
+; -----	object filled bar structure 
+;
+objBar		struc
+barFlags	db	?		; flags for bar
+barCol		db	?		; color number
+barDrawMode	db	?
+fillPattNum	db	?		; fill pattern # if -1 then
+fillPattPtr	dd	?		; pointer to fill pattern
+objBar		ends
+
+;
+; ----- object rectangle structure
+;
+objRect		struc
+rectFlags	db	?		; flags for rectangle
+rectCol		db	?		; color for rectangle
+rectDrawMode	dw	?
+objRect		ends
+
+
+;
+; ----- object line structure
+;
+objLine		struc
+lineFlags	db	?
+lineColor	db	?
+lineDrawMode	db	?
+linePattNum	db	?
+linePattern	dw	?
+objLine		ends
+
+;
+; -----	object strings structure
+;
+objStr		struc
+strXOff		dw	?		; x & y offsets of string
+strYOff		dw	?
+strFlags	db	?		; various string flags
+strCol		db	?		; string color
+strDisCol	db	?		; disabled color
+strSelCol	db	?
+strDrawMode	dw	?
+strPtr		dd	?		; pointer to string in memory
+objStr		ends
+
+;
+; ----- object bitmap structure
+;
+objBitmap	struc
+bitmapFlags	db	?		; various bitmap flags
+bitmapDrawMode	db	?
+bitmapNormalPtr	dd	?		; pointer to normal bitmap
+bitmapPressPtr	dd	?		; pointer to pressed bitmap
+objBitmap	ends
+
+;
+; ----- Rectangle structure type
+;
+Rect		struc
+rectX		dw	?
+rectY		dw	?
+rectW		dw	?
+rectH		dw	?
+Rect		Ends
+;
+; ----- Internal bitmap definitions
+;
+OBJCIRCLE	equ	(0*size objBitmap)
+OBJCLOSEWIN	equ	(1*size objBitmap)
+OBJDIAMON	equ	(2*size objBitmap)
+OBJDNARROW	equ	(3*size objBitmap)
+OBJLFARROW	equ	(4*size objBitmap)
+OBJSIZEWIN	equ	(5*size objBitmap)
+OBJRTARROW	equ	(6*size objBitmap)
+OBJBLOCK	equ	(7*size objBitmap)
+OBJUPARROW	equ	(8*size objBitmap)
+OBJOKBUTTON	equ	(9*size objBitmap)
+OBJCANCELBUTTON	equ	(10*size objBitmap)
+OBJSTOPICON	equ	(11*size objBitmap)
+
+;
+; -----	object device messages
+;
+OBJSELECT	equ	1
+OBJDESELECT	equ	2
+OBJMOUSEMOVE	equ	3
+OBJRELEASE	equ	4
+
+;
+; -----	default object ID's
+;
+OK_BUTTON	equ	1000
+CANCEL_BUTTON	equ	1001
+;
+; -----	global definitions
+;
+
+		global	drawObjects:far,_drawObjects:far
+		global	internalBitmaps:objBitmap
+		global	redrawObject:far,_redrawObject:far
+		global	setObjectFlags:far, _setObjectFlags:far
+		global	clearObjectFlags:far, _clearObjectFlags:far
+		global	BGIDefaults:far, patternNum:byte
+		global	_sizeObjects:far, sizeObjects:far
+
+		global	patternColor:byte, patterNum:byte, drawColor:byte
+		global	drawMode:byte, backColor:byte, PatternPtr:dword
+		global	ptInRect:far, savePopUpBack:far
+		global	restorePopUpBack:far, ptInObject:far
+		global	xMin:word, xMax:word, yMin:word, yMax:word
+		global	gNullStr:byte, drawOneObject:far, BGIutil:far
+		global	__bgi_add:dword,__graphnotinstalled:far
+		global	_closegraph:far, findObjectID:far
+		global	objParentDraw:far
+
+@

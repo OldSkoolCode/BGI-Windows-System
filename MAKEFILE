@@ -1,0 +1,16 @@
+#
+#
+#
+#
+
+
+
+test.exe: test.obj object.lib test.rsc
+	tlink /s /v c0s test test.rsc,test,,object+graphics+cs
+
+test.obj: test.c grace.h test.h
+	bcc -RT- -ms -c -v test.c
+
+
+test.rsc: test.rsa grace.h
+	tasm -zi test.rsa,test.rsc

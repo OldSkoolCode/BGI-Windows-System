@@ -1,0 +1,250 @@
+head	1.1;
+access;
+symbols;
+locks
+	KENH:1.1; strict;
+comment	@# @;
+
+
+1.1
+date	93.04.23.21.54.37;	author KENH;	state Exp;
+branches;
+next	;
+
+
+desc
+@@
+
+
+1.1
+log
+@Initial revision
+@
+text
+@;{----------------------------------------------------------------------}
+;{	MSDOS equate file for GRACE					}
+;{	COPYRIGHT 1989 Monarch Development				}
+;{----------------------------------------------------------------------}
+
+		ifndef	equatesinc
+		include	equates.inc
+		endif
+
+dosinc		equ	1
+
+		ifndef	memoryinc
+		include	memory.inc
+		endif
+
+;
+; -----	MSDOS equate section
+;
+OLDPROGTERM	equ	00h
+ECHOCHRIN	equ	01h
+CHROUT		equ	02h
+AUXIN		equ	03h
+AUXOUT		equ	04h
+PRTOUT		equ	05h
+CONIN		equ	06h
+UNFCHRIN	equ	07h
+CHRIN		equ	08h
+PRINTSTR	equ	09h
+BUFFINP		equ	0ah
+INPSTAT		equ	0bh
+RSETINPBUFF	equ	0ch
+DISKRSET	equ	0dh
+SETDEFDRV	equ	0eh
+FCBOPEN		equ	0fh
+FCBCLOSE	equ	10h
+FCBFSFIRST	equ	11h
+FCBFSNEXT	equ	12h
+FCBDELETE	equ	13h
+FCBSEQREAD	equ	14h
+FCBSEQWRITE	equ	15h
+FCBCREATE	equ	16h
+FCBRENAME	equ	17h
+GETDEFDRV	equ	19h
+SETDTA		equ	1ah
+GETDEFDISKINFO	equ	1bh
+GETDISKINFO	equ	1ch
+FCBRANDREAD	equ	21h
+FCBRANDWRITE	equ	22h
+FCBGETFSIZE	equ	23h
+FCBSETRECNUM	equ	24h
+SETINTVEC	equ	25h
+CREATEPSP	equ	26h
+FCBRANDBLKREAD	equ	27h
+FCBRANDBLKWRITE	equ	28h
+PARSEFNAME	equ	29h
+GETSYSDATE	equ	2ah
+SETSYSDATE	equ	2bh
+GETSYSTIME	equ	2ch
+SETSYSTIME	equ	2dh
+SETVERIFYFLG	equ	2eh
+;
+; -----	Dos 2.x
+;
+GETDTA		equ	2fh
+GETMSDOSVER	equ	30h
+TERMSTYRES	equ	31h
+GETSETCTRLC	equ	33h
+GETINTVEC	equ	35h
+GETDISKFREE	equ	36h
+GETSETCOUNTRY	equ	38h
+CREATEDIR	equ	39h
+DELETEDIR	equ	3ah
+CHANGEDIR	equ	3bh
+CREATEFILE	equ	3ch
+OPENFILE	equ	3dh
+CLOSEFILE	equ	3eh
+READFILE	equ	3fh
+WRITEFILE	equ	40h
+DELETEFILE	equ	41h
+MOVEFILEPTR	equ	42h
+GETSETFILEATTR	equ	43h
+IOCTL		equ	44h
+DUPHANDLE	equ	45h
+FORCEDUPHANDLE	equ	46h
+GETCURDIR	equ	47h
+ALLOCMEM	equ	48h
+FREEMEM		equ	49h
+SHRINKMEM	equ	4ah
+PEXEC		equ	4bh
+PTERM		equ	4ch
+GETRETCODE	equ	4dh
+FSFIRST		equ	4eh
+FSNEXT		equ	4fh
+SETPSP		equ	50h
+GETPSP		equ	51h
+GETDOSINVARS	equ	52h
+GETVERIFYFLG	equ	54h
+RENAMEFILE	equ	56h
+GETSETFDATETIME	equ	57h
+;
+; -----	Dos 3.x
+;
+GETSETALLOCSTRA	equ	58h
+GETEXTERRORINFO	equ	59h
+CREATETEMPFILE	equ	5ah
+CREATENEWFILE	equ	5bh
+RECORDLOCK	equ	5ch
+GETMACHINENAME	equ	5eh
+ASSIGNLISTENT	equ	5fh
+GETPSP2		equ	62h
+
+MSDOS		equ	21h
+SETPAL		equ	1002h
+
+;
+; -----	MSDOS Error Return Codes
+;
+EINVFNC		equ	-1	; invalid function
+EFILENF		equ	-2	; file not found
+EPTHNFND	equ	-3	; path not found
+ENFILEH		equ	-4	; no more file handles avialable
+EACCDEN		equ	-5	; access denied
+EHANDINV	equ	-6	; file handle invalid
+EENVINV		equ	-10	; environment invalid
+EFORINV		equ	-11	; format invalid
+EACCCINV	equ	-12	; acess code invalid
+EDATAINV	equ	-13	; data invalid
+EDISKDINV	equ	-15	; disk drive invalid
+EATTRCURDIR	equ	-16	; attempted to remove current directory
+ENOTSDEV	equ	-17	; not same device
+ENOMOREFLS	equ	-18	; no more files
+EDISKWP		equ	-19	; disk is write protected
+EUNKUNIT	equ	-20	; unknown unit
+EDRVNRDY	equ	-21	; drive not ready
+EUNKCMD		equ	-22
+ECRCERR		equ	-23	; data crc error
+EBREQSLEN	equ	-24	; bad request structure length
+ESEEKERR	equ	-25	; seek error
+EUNKMEDT	equ	-26	; unknown medium type
+ESECNFND	equ	-27	; sector not found
+EPRNNPAP	equ	-28	; printer out of paper
+EWRTFLT		equ	-29	; write fault
+EREADFLT	equ	-30	; read fault
+EGENFAIL	equ	-31	; General failure
+ESHARVIOL	equ	-32	; share violation
+ELOCKVIOL	equ	-33	; lock violation
+EDISKCINV	equ	-34	; disk change invalid
+EFCBUNA		equ	-35	; FCB unavailable
+EDISKFULL	equ	-36	; disk full error
+EEOF		equ	-37	; end of file error
+EFILEEX		equ	-80	; file exists
+EUNAMD		equ	-82	; unable to make directory
+
+;
+; ----- MsDos File Attribute Bits
+;
+NORMAL		equ	0
+READONLY	equ	1
+HIDDEN		equ	2
+SYSTEM		equ	4
+VOLLABEL	equ	8
+DIRECTORY	equ	10h
+ARCHIVE		equ	20h
+
+ALLFILES	equ	READONLY OR HIDDEN OR SYSTEM OR ARCHIVE
+
+;
+; ----- MsDos File Control Block Structure
+;
+FCB	struc
+
+FCBDriveID	db	?
+FCBFileName	db	8	dup	(?)
+FCBFileExt	db	3	dup	(?)
+FCBCurBlock	dw	?
+FCBRecSize	dw	?
+FCBFileSize	dw	?,?
+FCBFileDate	dw	?
+FCBFileTime	dw	?
+FCBReserv1	db	8 	dup	(?)
+FCBCurRecNum	db	?
+FCBRandRecNum	dd	?
+
+FCB	ends
+
+;
+; -----	MsDos Filename DTA structure
+;
+FnameDTA	struc
+
+FDTAReserved	db	21	dup (?)
+FDTAAttribute	db	?
+FDTAFileTime	dw	?
+FDTAFileDate	dw	?
+FDTAFileSize	dd	?
+FDTAFileName	db	13	dup (?)
+
+FnameDTA	ends
+
+;
+; -----	global procedures
+;
+
+		global	strcat:far,strcpy:far,_exit:far
+		global	loadfile:far,savefile:far,loadmem:far
+		global	parsecl:far,readfilel:far,strcmp:far
+		global	writefilel:far,checkswitches:far
+		global	settolower:far,settoupper:far,parseline:far
+		global	hextodec:far,stripext:far,strlen:far
+		global	stripfname:far,hextoasc:far,getchar:far
+		global	memstorebyte:far,buffgetbyte:far,inpfhand:word
+		global	outpfhand:word,inpdatartn:dword,outpdatartn:dword
+		global	sbytebuff:byte:1024,sbytebnum:word,sendbytebuff:word
+		global	memgetbyte:far,buffstorebyte:far,obufflush:far
+		global	memstorebyte:far,buffgetbyte:far,nobuffflush:far
+		global	dbytebuff:byte:1024,dbytebnum:word,outpflushrtn:dword
+		global	inpdataptr:word,outpdataptr:word,inpdatasize:word
+		global	outpdatasize:word,setsrcasmemory:far,filesize:far
+		global	setdestasmemory:far,setdestasdisk:far
+		global	inpseekrtn:dword,outpseekrtn:dword,setsrcasdisk:far
+		global	setotherterms:far,destmemory:byte
+		global	hextobcd:far,bcdtodec:far,curDTAptr:dword
+		global	getfirstfilename:far,getnextfilename:far
+		global	getcharrtn:byte,getdoschar:far
+
+
+@

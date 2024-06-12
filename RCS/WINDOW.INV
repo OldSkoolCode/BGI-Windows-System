@@ -1,0 +1,115 @@
+head	1.2;
+access;
+symbols;
+locks
+	KENH:1.2; strict;
+comment	@# @;
+
+
+1.2
+date	93.05.30.00.14.29;	author KENH;	state Exp;
+branches;
+next	1.1;
+
+1.1
+date	93.04.23.21.53.52;	author KENH;	state Exp;
+branches;
+next	;
+
+
+desc
+@@
+
+
+1.2
+log
+@New equates for window button presses
+@
+text
+@
+windowinc	equ	1
+
+		ifndef objectinc
+		include object.inc
+		endif
+
+		ifndef keyboardinc
+		include keyboard.inc
+		endif
+
+		ifndef mouseinc
+		include mouse.inc
+		endif
+
+;
+; ----- bit definitions for windows
+;
+WIN_DRAW	equ	1
+WIN_TITLE_BAR	equ	2
+WIN_CLOSE_BM	equ	4
+WIN_VSCROLL	equ	8
+WIN_HSCROLL	equ	16
+WIN_SIZE_BM	equ	32
+
+;
+; -----	window events message #
+;
+WINDOW_REDRAW_WS equ	1		; redraw window's work space
+WINDOW_CLOSE	equ	2
+WINDOW_RESIZE	equ	3
+WINDOW_MOVE	equ	4
+WINDOW_VS_UP	equ	5		; vertical scroll up arrow
+WINDOW_VS_DOWN	equ	6
+WINDOW_VS_BAR	equ	7		; clicked in vertical scroll bar
+WINDOW_HS_LEFT	equ	8		; horizontal left arrow 
+WINDOW_HS_RIGHT	equ	9
+WINDOW_HS_BAR	equ	10
+WINDOW_TO_TOP	equ	11		; bring window to top
+WINDOW_TO_BACK	equ	12		; put window in back
+WINDOW_MOUSE_MOVE equ	13		; mouse movement in window area
+WINDOW_MOUSE_CLICK equ	14		; mouse click in window area
+WINDOW_KEY_PRESS  equ	15		; keyboard press for window
+WINDOW_KEY_RELEASE equ	16		; keyboard release for window
+WINDOW_COOKED_KEY equ	17		; window dos cooked key pressed
+WINDOWITEMPRESS	equ	18		; window item was pressed
+WINDOWITEMRELEASE equ	19		; window item was released
+;
+;
+;
+MINWINDOWHEIGHT	equ	36
+;
+;
+;
+winHeader	struc
+
+winID		db	4 dup (?)	; 'WIND' id for window type
+winX		dw	?
+winY		dw	?
+winW		dw	?
+winH		dw	?
+winNext		dw	?		; next window handle
+winPrevious	dw	?		; previous window handle
+winOffset	dw	?		; current structure malloced offset
+winProcPtr	dd	?
+winReserved	db	10 dup (?)	; pad to segment size
+winHeader	ends
+
+;
+; -----	global's for window.asm
+;
+
+		global	_makeWindow:far, makeWindow:far
+		global	_DefWindProc:far
+
+
+
+@
+
+
+1.1
+log
+@Initial revision
+@
+text
+@d46 2
+@

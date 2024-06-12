@@ -1,0 +1,1739 @@
+
+
+
+
+
+
+
+
+
+
+                                     GO!
+
+
+                      The Install-From-Diskette Program
+
+
+
+                                User's Manual
+
+
+
+
+
+
+
+
+
+
+                           Copyright (C) 1991, 1992
+
+                                     and
+
+                             All Rights Reserved
+
+                                      by
+
+                           -- PINNACLE SOFTWARE --
+                           CP 386 Ville Mont Royal
+                           Quebec, Canada, H3P 3C6
+
+
+
+
+
+
+
+
+
+ ----------------------------------------------------------------------------
+
+                     FROM THE OXFORD ENGLISH DICTIONARY:
+
+   GO, v.i. Start, depart ... with self-originated or imparted motion, from
+    some place, position, time etc. ... always specified if it matters ...
+
+ ----------------------------------------------------------------------------
+
+                                -------------
+                                Legal Notices
+                                -------------
+
+
+The  GO program and  related files  are distributed  using freeware/shareware
+concepts.   You  are entitled  to use  these programs  for free,  but certain
+restrictions apply.  Refer to  the section of this manual  entitled "Versions
+and Registration" for details.
+
+
+The following products  are mentioned in  this manual and are  trademarked or
+otherwise protected:
+
+
+   PRODUCT  For Information Contact
+   -------  -----------------------
+   ARC      System Enhancement Associates (SEA)
+   ARCE     Vernon Buerg, or System Enhancement Associates
+   COPYQM   Sydex
+   DIET     Teddy Matsumoto
+   FORMATQM Sydex
+   LHARC    Haruyasu Yoshizaki
+   LIST     Vernon Buerg
+   PKLITE   PKWare
+   PKUNZIP  PKWare
+
+
+Several  text  editor  programs are  mentioned  in this  manual.    These are
+trademarked or otherwise protected by their respective companies or authors.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                      ii
+
+                              -----------------
+                              Table of Contents
+                              -----------------
+
+
+
+Legal Notices . . . . . . . . . . . . . . . . . . . . . . . . . . . . .    ii
+
+Table of Contents . . . . . . . . . . . . . . . . . . . . . . . . . . .   iii
+
+A Quick Overview of the GO Package  . . . . . . . . . . . . . . . . . . .   1
+
+Basic Concepts  . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   2
+   What is GO?
+   How GO Works
+   Using GO
+   Optional Menu Lines
+   The "Information" Selection
+      Colorization Rules
+   The "Install" Selection
+
+Changing the Dearchiving Method . . . . . . . . . . . . . . . . . . . . .   6
+   Doing it the Easy Way
+   Doing It the Hard Way
+
+Intermediate Techniques . . . . . . . . . . . . . . . . . . . . . . . . .   7
+   Start-Up Parameters
+   Generating an Introductory Screen
+   Letting the User Choose His Viewing Method
+   Information and Install Menus
+      Menu Order
+
+Advanced Techniques . . . . . . . . . . . . . . . . . . . . . . . . . . .   9
+   Using the .GO Extension of Text Files
+   The ;INST Command
+
+Multi-Disk Installation . . . . . . . . . . . . . . . . . . . . . . . .    10
+   Installation Example
+   NAMe 
+   SENDto 
+   STARt 
+   THISdisk 
+   NEWDisk 
+   NEWFile 
+
+The GO-COPY Program . . . . . . . . . . . . . . . . . . . . . . . . . .    14
+   What is GO-COPY?
+   The GO-COPY.COP File
+
+The GO-DISKS Program  . . . . . . . . . . . . . . . . . . . . . . . . .    15
+   What is GO-DISKS?
+   GO-COPY and GO-DISKS Samples
+
+
+
+
+                                     iii
+
+Using GO in Batch Files . . . . . . . . . . . . . . . . . . . . . . . .    16
+   What is GO-MENU?
+   Using GO -D With GO-Menu
+   The GO.HDG File
+
+Hints and Tips  . . . . . . . . . . . . . . . . . . . . . . . . . . . .    18
+   Specifying GO-COPY File Names
+   Renaming Copy Files
+
+Other Programs Included with GO . . . . . . . . . . . . . . . . . . . .    19
+   SEE
+   GO_SMALL
+   READING
+   SETERR
+   WAITBLK
+
+Versions and Registration . . . . . . . . . . . . . . . . . . . . . . .    21
+   Changes Between Versions
+   Free Usage of GO Programs
+   Ordering Upgrades to GO
+      Standard Discount
+   Thank-You
+
+Index . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .    23
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                      iv
+
+                      ----------------------------------
+                      A Quick Overview of the GO Package
+                      ----------------------------------
+
+
+The GO package includes the following programs:
+
+
+GO
+
+   Place this program on any diskette you send  out which contains compressed
+   archive files  (e.g. .ZIP or .LZH).  The GO program will make installation
+   easy.  This is especially important if you send disks to computer novices.
+   GO can also display information, or print out a reply form.
+
+
+GO-COPY
+
+   This program makes it possible for computer novices to copy selected files
+   from  your disk  onto  another  diskette.   This  is handy  if  you are  a
+   shareware  author, since  you  want to  make your  software  easy to  pass
+   around.
+
+
+GO-DISKS
+
+   This program reads in a  list of file names,  then copies those files to  
+   diskettes.  Since the files are kept in RAM during the copy, you can mass-
+   produce disks much more quickly than if you were using the COPY command.
+
+
+GO-MENU
+
+   This program is used in a batch file  to present a menu of up to 10 items.
+   This  is ideal  for  organizing a  diskette  containing several  unrelated
+   programs.  A much simpler "pick an option" program is also included in the
+   GO package -- see the GETKEY program mentioned below.
+
+
+The  package also  includes these  small utility  programs which  have proved
+themselves useful in packaging software:
+
+   SEE         File viewer/printer
+   GO_SMALL    A compressed but fully functional version of GO.EXE
+   READING     Places the message "Reading disk..." on the screen
+   SETERR      Sets the DOS Errorlevel
+   GETKEY      Waits for user to hit a key and reports result as ERRORLEVEL
+   WAIT        Waits for time-out or for a key-press
+   WAITBLK     Waits for a blank diskette in the indicated drive
+
+
+Each of these programs are described in more detail later.
+
+
+
+
+                                      1
+
+                                --------------
+                                Basic Concepts
+                                --------------
+
+
+
+What is GO?
+-----------
+
+
+"GO" is  an installation program.   It is  a simple "shell"  for "dearchiving
+programs" such  as PKUNZIP, ARCE, LHARC and so on.   GO is a very specialized
+shell.    You use  it for  ONE purpose  only:   distribution of  software via
+diskette.
+
+If you've ever given a computer novice a diskette with  an archived file, you
+know the routine:
+
+   "Okay, you put the diskette in the drive, then type PKUNZIP followed by
+   the root name of the zip and then the  name of the directory it's going
+   to, unless  you're there already ...  and don't forget to  separate the
+   parameters with spaces!"
+
+The usual comment after such an explanation is:
+
+                  "Can't you make it any easier that that?"
+
+Thanks to GO ... you can!
+
+
+
+How GO Works
+------------
+
+
+NOTE: In this manual, we refer to archive  files as ZIP files.  The shareware
+      version  of GO is initially  configured to dearchive  files produced by
+      PKWare's PKZIP  program, but  it can  also work with  ARC, PAK,  ZOO or
+      other archive formats.  We ourselves like to use the LZH format on some
+      of our distribution diskettes.
+
+When you're preparing a diskette for somebody, copy one or more ZIP files (up
+to a  maximum of 9) onto the diskette, plus the dearchiving program, plus the
+file GO.EXE.  Then write a short explanation on the diskette label:
+
+                  Put this diskette in the A: drive
+                  At the DOS prompt enter the command A:GO
+
+If you know that  the user uses a DOS shell menu, you  may have to alter your
+explanation slightly.
+
+If the user follows those simple instructions, he will be able to install the
+ZIP files that are located on the diskette.
+
+
+
+                                      2
+
+The user does require a certain bare minimum level of knowledge, though.   He
+must be familiar with terms like Drive A:, File, and Directory.
+
+
+
+Using GO
+--------
+
+
+When the user types A:GO (or B:GO if appropriate) he is presented with a very
+simple menu that offers him the following three choices:
+
+                               Information
+                               Install
+                               Quit
+
+He can select an option either with function keys or by  using the arrow keys
+and Enter.
+
+<Information>  displays a text file on the  diskette.  If there are more than
+one text file, he is presented with a menu.
+
+<Install>  suggests  a  directory name  (which  the  user  can change),  then
+dearchives  the program  into that  directory.   If there  are more  than one
+archive file, he is first presented with a menu.
+
+
+
+Optional Menu Lines
+-------------------
+
+
+The GO  menu  sometimes shows  more  than  the three  items  mentioned  (i.e.
+Information, Install and Quit).  The following two items may also appear:
+
+                             About "GO"
+                             Print reply form
+
+<About  "GO">  appears on  all unregistered  copies of  GO.   If you  order a
+personalized copy of GO  ($16 + $3  S&H), this advertisement will  disappear.
+(Personalized copies  also replace our copyright notice on the main menu with
+the text of your choice.)
+
+<Print reply  form>  appears only  if  the file  GO-FORM.DAT appears  on  the
+diskette.  GO-FORM.DAT  is a text file that  can be prepared on  any standard
+DOS text editor.
+
+
+
+
+
+
+
+
+
+
+                                      3
+
+The "Information" Selection
+---------------------------
+
+
+GO's Information section  is designed exclusively for  small text files.   If
+you   want  to  provide  the  user  with  extensive  documentation  prior  to
+installation,  we  recommend that  you  purchase  Pinnacle Software's  HELPME
+program ($15) or  (as a quick alternative) use the  SEE program provided with
+GO.
+
+A "text file" is any file with an extension of TXT, LST, or S-D.
+
+The  Information section  is appropriate  for displaying  one or  two screens
+containing important information such as:
+
+              A brief description of what's on the disk
+              How the user can obtain help if he gets stuck
+
+If  the  user is  viewing  the text  on a  color  monitor, the  text  will be
+displayed in various colors, according to some simple rules.
+
+
+
+Colorization Rules
+
+
+If the viewer is using monochrome or MODE BW80, all text is the same color.
+Otherwise...
+
+
+       IF THE LINE CONTAINS         THE COLOR IS
+       --------------------         ------------
+       Regular text                 LightGreen       unless...
+       Four spaces in a row         Yellow           unless...
+       All uppercase                LightMagenta     unless...
+       Characters over ASCII 128    LightCyan        unless...
+       ;NEW or ASCII 12 in col. 1   White on Blue
+
+
+NOTE:  ASCII 12 (CTRL-L i.e. Form Feed) causes a new screen to be displayed. 
+All  text   editors  have   a  method   for  inserting   control  characters.
+WordStar-style editors (QEdit, Turbo Pascal  Editor, etc.) can insert  Ctrl-L
+with the keystroke sequence Ctrl-P Ctrl-L.  If you can not type a CTRL-L, you
+can type ;NEW instead.  The advantage of using CTRL-L is that it will cause a
+page-eject if the document is printed out.
+
+Of course,  this colorization  technique is  not as  powerful  as using  ANSI
+displays, but it  allows the more  advanced user to  view or print  the files
+using whatever method he prefers.  Also, these colorization rules let you use
+a regular  text file, are  easily memorized,  and generally  create a  fairly
+attractive display.
+
+
+
+
+
+                                      4
+
+The "Install" Selection
+-----------------------
+
+
+NOTE: The "Install" selection appears on the main  GO menu only if GO sees an
+      archive file that uses the format it is configured for (e.g. a ZIP file
+      if GO is configured to use PKUNZIP, ARC for ARCE, etc.)
+
+When  the user selects "Install"  from the main GO menu,  the archive file on
+the diskette is installed in a directory with the same name.  (The user has a
+chance to change the name of the directory, however.)
+
+If there is morethan one archive file, theuser is first presented witha menu.
+
+Remember to put  a copy of the  dearchiving program on  the diskette, or  the
+installation step will display an error message.  (In such case, GO will scan
+the  user's  PATH  for  a  copy  of the  dearchiving  program,  but  it  will
+nevertheless caution him that  it expected to  find a dearchiving program  on
+the  diskette.   This  forewarns  the user  that  problems may  occur  if his
+dearchiver is obsolete.)
+
+After  the installation  is complete, GO  looks in  the directory  for a file
+named READ.ME.  If  it finds it, it displays it.  If  it can't find a READ.ME
+file,  it displays the first DOC file in  the directory.  GO then returns the
+user to DOS (or the DOS shell).
+
+Thus,  your READ.ME should  tell the user what  to do next  (how to start the
+program, usually).
+
+If your installation  is fancy  (i.e. requires dearchiving  the archive  file
+into  several  different directories),  you  could place  the  directories in
+separate archive files.   A better solution is to  order a customized version
+of GO, or to modify the dearchiving parameters.  The method for doing this is
+explained in the next section.
+
+See also "The ;INST Command" in "Advanced Techniques".
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                      5
+
+                       -------------------------------
+                       Changing the Dearchiving Method
+                       -------------------------------
+
+
+
+Doing it the Easy Way
+---------------------
+
+
+When you order a registered copy of GO from Pinnacle Software, you may ask us
+to change the dearchiving method.   Please remember to cite the  precise name
+of the program that does the dearchiving, the extension of  the archive files
+that it handles,  and the command-line parameters it requires.  (If possible,
+send us a copy of the program so we can test it.)
+
+There is no extra charge for this service.
+
+
+
+Doing It the Hard Way
+---------------------
+
+
+If you're an experienced programmer, you  can use a program such as DEBUG  to
+"zap" in  the name of the dearchiving program.   You can find the text string
+near the end of  the GO.EXE file.  The byte just prior to the string dictates
+the length of the string.
+
+The string  following the  file name  contains the extension  of the  archive
+files (e.g. ZIP).  This should be changed if appropriate -- be sure to change
+the length byte if different.
+
+The  next  string (ten  characters)  contains the  parameter  to pass  to the
+dearchiver.  (Some dearchivers, such as PKUNZIP, don't need a parameter)
+
+EXAMPLE:  CHANGING FROM PKUNZIP TO LHA
+
+Original   0B 50 4B 55 4E 5A 49 50 2E 45 58 45 00 00 03 5A .PKUNZIP.EXE...Z
+Hex/ASCII  49 50 00 00 00 00 00 00 00 00 00 00 00 00 0B 00 IP..............
+
+Modified   07 4C 48 41 52 43 2E 45 58 45 00 00 00 00 03 4C .LHA.EXE.......L
+Hex/ASCII  5A 48 01 65 00 00 00 00 00 00 00 00 00 00 00 00 ZH.e............
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                      6
+
+                           -----------------------
+                           Intermediate Techniques
+                           -----------------------
+
+
+
+Start-Up Parameters
+-------------------
+
+
+If  you know that the user has a monochrome monitor but a color display card,
+advise him that he can improve legibility by starting up GO as follows:
+
+                                    GO M
+
+
+For more information about start-up parameters, start GO as follows:
+
+                                    GO ?
+
+
+An  additional  start-up parameter  (the -D  parameter)  is described  in the
+section of this manual entitled "GO-MENU".
+
+
+
+Generating an Introductory Screen
+---------------------------------
+
+
+If you want your  user to see some text  even before the main menu  shows up,
+place the text in a file named 'GO-STRT.DAT'.
+
+
+This is good  place to put personal notes or  special instructions that apply
+only to the  recipient of the diskette.  The personal note in particular is a
+"nice  touch" that your users may appreciate;  most people don't expect to be
+greeted by name when they run the installation program!
+
+
+
+Letting the User Choose His Viewing Method
+------------------------------------------
+
+
+When designing GO-viewable screens, bear in mind that the user  may decide to
+view the  file with another viewer, such as LIST,  SEE or HELPME.  Thus, even
+though you may be tempted to do this:
+
+
+                        End of screen 1
+                        <CTRL-L>Heading of Screen 2
+                        Text of screen 2
+
+
+
+                                      7
+
+... you should leave at least one empty line in front of the heading:
+
+
+                        End of screen 1
+
+                        <CTRL-L>Heading of Screen 2
+                        Text of screen 2
+
+
+Similarly, if  you know that  the file is likely  to be printed,  avoid using
+line-drawing and other special characters.
+
+
+
+Information and Install Menus
+-----------------------------
+
+
+Information and  install menus pop up only when there  are more than one file
+of the appropriate type.
+
+For example, if you  had one ZIP file, it would be  picked automatically when
+the user selects <Install>  from the Main Menu.  However,  if there were more
+than one ZIP file, the user would be presented with a menu.
+
+
+
+Menu Order
+
+
+The text menu is sorted by extension according to the following order:
+
+                               TXT   LST   S-D
+
+If you have several  files with one extension, they appear in  the same order
+that is shown in the listing obtained with the DOS DIR command.
+
+If you want to modify the  list of extensions, provide us with your  required
+list  when  you  register  GO  and we'll  modify  your  copy  of  the program
+accordingly.  There is no extra charge for this service.
+
+If you want to  modify the list yourself, you  will find it located  near the
+end  of the  EXE file.   The string is  20 characters long.   For information
+about  such alterations, refer  to the  section entitled  "Doing It  the Hard
+Way".
+
+The  install menu lists  the files  in the order  they appear in  the listing
+obtained with the DOS DIR command.
+
+
+
+
+
+
+
+
+                                      8
+
+                             -------------------
+                             Advanced Techniques
+                             -------------------
+
+
+
+Using the .GO Extension of Text Files
+-------------------------------------
+
+
+As mentioned earlier, the "Information" option  of the main GO menu scans for
+these extensions:
+
+                               TXT   LST   S-D
+
+GO also looks to see if you have any files with the .GO extension.  These are
+treated like  other text files,  except that  the first line  of the  file is
+displayed on the Information menu, instead of the file name.
+
+When  the user selects the file from  the Information menu, the first line of
+the file (the one that appeared on the Information menu) is NOT displayed.
+
+
+
+The ;INST Command
+-----------------
+
+
+If the last line of a .GO file is:
+
+   ;INST
+
+the user will be asked (after viewing the final screen of information):
+
+   Do you want to install this now?  (Y n)
+
+If  they press Y, the product is installed  immediately.  This saves them the
+trouble of going back to the main menu and then selecting "Install".
+
+The  INST command is particularly  useful in multi-disk  installations.  This
+technique is described in the following section.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                      9
+
+                           -----------------------
+                           Multi-Disk Installation
+                           -----------------------
+
+
+Sometimes there  isn't enough room on a single disk  for an archive file that
+contains the entire product to be installed.  In such cases, you can break up
+the product  into multiple archives,  then use an  extended form of  the INST
+command to create a multi-disk installation.
+
+The INST command supports the following parameters:
+
+
+  Parameter
+  Name      Note Example           Description of Parameter
+  --------- ---- ----------------- ------------------------
+  NAME       1   Name=Calc-O-Rama  Actual name of the product
+  SENDto     1   SendTo=CALCRAMA   Suggested directory name
+  STARt      2   Start=Install     Name of the first disk
+  THISdisk   3   ThisDisk=Install  Name of this disk
+  NEWDisk    4   NewDisk=Programs  Name of the next disk in the installation
+  NEWFile    4   NewFile=COR-2     Root name of archive file on the next disk
+
+
+Only the  first four  letters of the  parameter identifier (e.g.  NAME, NEWD,
+etc.) are required.
+
+NOTE #1:  Appears only on the FIRST installation disk
+
+NOTE #2:  Appears only on the SECOND and subsequent installation disks
+
+NOTE #3:  Appears on all disks
+
+NOTE #4:  Appears on all but the last disk
+
+These parameters are explained in more detail after the example section.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                      10
+
+Installation Example
+--------------------
+
+
+ASSUMPTION:  You  have a product named  "The Sapphire Bulletin Board  System"
+(Sapphire BBS) which you have  broken up into two ZIP files  of approximately
+200K each in order to ensure that they fit on 360K disks.  Here is what would
+appear on each disk:
+
+
+Disk #1:
+
+  GO.EXE
+
+  PKUNZIP.EXE
+
+  SAPPHIR1.ZIP
+
+  SAPPHIR1.GO  --  This file would look something like this:
+
+    About Sapphire
+    ;NEW SAPPHIRE -- THE ZERO-MAINTENANCE BBS
+
+    SAPPHIRE is a bulletin board system that is  optimized for business and
+    institutional applications.   It installs in minutes  and does not need
+    daily maintenance.  Sapphire is reliable, simple and safe.
+
+    ;INST/Name=Sapphire BBS/ThisDisk=Docu/NewDisk=Programs/NewFile=SAPPHIR2
+
+
+Disk #2
+
+  GO.BAT  --  This file would look something like this:
+
+    ECHO OFF
+    ECHO Please refer to Disk #1 for installation instructions.
+
+  PKUNZIP.EXE
+
+  SAPPHIR2.ZIP
+
+  SAPPHIR2.GO  --  This file would look something like this:
+
+    ;INST/ThisDisk=Programs/Start=Docu
+
+
+
+
+
+
+
+
+
+
+
+
+                                      11
+
+The NAMe Parameter (Optional; first disk)
+------------------
+
+
+The NAMe parameter lets you specify the actual name of your product.  This is
+used only in the question "Do you want to install [product name]?"  If you do
+not specify this parameter, the name of the archive file will be used.  
+
+
+
+The SENDto Parameter (Optional; first disk)
+--------------------
+
+
+The SENDto parameter lets you specify the  recommended destination directory.
+If you do not specify this parameter,  the directory will be named after  the
+first archive  file.    The  user can,  of  course,  change  the  recommended
+installation directory in any case.
+
+In most cases, you should NOT specify a drive  for the SENDto parameter -- GO
+will pick C: (or  B: if the user doesn't have a C:  drive).  However, you can
+specify a drive if you want to force the user to consider a particular drive.
+
+
+
+The STARt Parameter  (Disk 2+)
+-------------------
+
+
+The STARt parameter is  used on any disks after the first  one to specify the
+name of  the first installation  disk.  (See THISdisk)   If the  user selects
+GO's "Install" option  and then selects an installation step  after the first
+one, it will advise him that the correct starting step is named [whatever you
+specify as STARt].  The user may continue with  installation if he wants, but
+is advised against it.
+
+
+
+The THISdisk Parameter  (All disks)
+----------------------
+
+
+The THISdisk parameter gives the  current disk a name.  This name  is checked
+when the  user inserts the disk  as the next  step in an installation.   (See
+NEWDisk)
+
+The "disk  name" applies  only to  the current  installation  task (i.e.  the
+archive  file plus the  associated .GO file),  so you could,  in theory, have
+several GO files on  the disk, each giving it  a different name.  That  is to
+say,  the disk  itself is  not "stamped"  in any  way; the  identification is
+contained in the .GO file only.
+
+
+
+
+
+                                      12
+
+The NEWDisk Parameter  (All but last disk)
+---------------------
+
+
+If there  are any disks to follow the current  one, you specify the disk name
+with the  NEWDisk parameter.  For example, if you  had named the current disk
+DISK3 by using "THIS=DISK3", it would make sense to name the next disk DISK4.
+You would specify this as "NEWD=DISK4".
+
+If DISK3  was the FINAL disk,  though, you would omit  the NEWDisk parameter.
+This is how GO knows that the installation is complete.
+
+
+
+The NEWFile Parameter  (All but last disk)
+---------------------
+
+
+The NEWFile  parameter lets you specify the root name  of the archive file to
+be used in the next installation step.
+
+You could,  in theory,  give  identical file  names to  all  archives on  all
+installation disks.  In practice, however, you will give them different names
+because this lets you:
+
+  - Keep standard copies in the same hard drive directory
+  - Place multi-disk installation steps ON THE SAME DISK (e.g. 1.4 meg)
+
+GO always looks  on the current disk for the NEWFile file before asking for a
+new disk.   Thus, you  can use the  same GO files for  both 360K and  1.4 meg
+installation disks.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                      13
+
+                             -------------------
+                             The GO-COPY Program
+                             -------------------
+
+
+
+What is GO-COPY?
+----------------
+
+
+GO-COPY processing lets the user copy selected files to another diskette.
+
+If GO sees  the files GO-COPY.EXE  and GO-COPY.COP on  the diskette, it  will
+read the first  line of  GO-COPY.COP and display  that on  the main GO  menu.
+When the user selects this item, the program GO-COPY.EXE is called.
+
+GO-COPY copies  files from the diskette to another diskette.  The files to be
+copied are specified in the file GO-COPY.COP (described later).
+
+All  files to  be copied  are first  read into  RAM, in  order to  make rapid
+duplication possible.  This  places a limit on the size of the copy task.  GO
+and GO-COPY take  up around 120K, so you  need around 500K of free  memory to
+copy a full 360K disk.
+
+If there is not enough RAM, the user is advised to remove TSRs, or to run GO-
+COPY directly (since GO is not loaded, this saves about 70K).
+
+
+
+The GO-COPY.COP File
+--------------------
+
+
+GO-COPY.COP is a text file.  It has the following format:
+
+
+                 ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+                 ³ Text to appear on the main GO menu      ³
+                 ³ File name                               ³
+                 ³ File name                               ³
+                 ³ :                                       ³
+                 ³ :                                       ³
+                 ³ END                                     ³
+                 ³ Text to be displayed prior to copy task ³
+                 ³ :                                       ³
+                 ³ :                                       ³
+                 ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+
+Up to  50 files can be  copied by GO-COPY.  The  end of the list  of files is
+indicated by the word END.  Wildcards are permitted (e.g. *.EXE).
+
+The display text is  shown according to the standard display and colorization
+rules described in "Basic GO Techniques".
+
+
+                                      14
+
+                             --------------------
+                             The GO-DISKS Program
+                             --------------------
+
+
+
+What is GO-DISKS?
+-----------------
+
+
+GO-DISKS processing is just like GO-COPY processing, but  is designed for the
+software developer rather  than the end user.  Instead of asking you to press
+a key to continue, GO-DISKS monitors the status of the diskette drive.
+
+GO-DISKS is useful when you need to create dozens of copies of the same disk.
+Since the copies are performed from RAM, you can create the disks faster than
+usual.
+
+The  data for GO-DISKS is  kept in the text file  GO-DISKS.DSK.  You may also
+pass the name of the file on the command line.  The format of GO-DISKS.DSK is
+the same as for the GO-COPY.COP file.
+
+
+   IMPORTANT NOTE:   GO-DISKS  requires   an  AT-class  (or
+                     higher) computer.  It will not work on
+                     most XT- or PC-class machines.
+
+   NOTE:             If you find GO-DISKS  useful, you might also
+                     consider  trying  out  the   COPYQM  program
+                     created by Sydex Inc.   We ourselves use the
+                     FORMATQM program, also by Sydex.
+
+
+
+GO-COPY and GO-DISKS Samples
+----------------------------
+
+
+The original GO  package includes sample GO-DISKS.DSK and  GO-COPY.COP files.
+In order to try these out, enter
+
+   GO-COPY
+
+or
+
+   GO-DISKS
+
+at the DOS prompt.
+
+
+
+
+
+
+
+
+                                      15
+
+                           -----------------------
+                           Using GO in Batch Files
+                           -----------------------
+
+
+
+NOTE: For  an example  of using  GO-MENU with  GO, order  our Maxi-Collection
+      Diskette for only $3.  A  1.44 Meg diskette drive is required  for this
+      special offer,  which brings you 3 megabytes of archived shareware.
+
+
+
+What is GO-MENU?
+----------------
+
+
+The GO-MENU  program is used in  a batch file to  present a menu of  up to 10
+items.  This is ideal for organizing a diskette containing several  unrelated
+programs, but can be used in any batch file application.
+
+GO-MENU reads  the contents of the menu from an ordinary text file containing
+ten lines, corresponding to the F1, F2 ... F10 lines on the menu.
+
+The command line format for GO-MENU is:
+
+   GO-MENU <menu file>
+
+For example:
+
+   GO-MENU MYMENU.MNU
+
+For a sample menu definition, refer  to the file GO-MENU.MNU, included in the
+GO  package.  It  shows also how  lines beginning  with a semi-colon  (;) are
+ignored as comments.
+
+
+
+Using GO -D With GO-Menu
+------------------------
+
+
+The GO program has a special command line parameter designed to work with GO-
+MENU.  Normally, when you call GO, it will  look in its home directory for an
+archive file.  Thus,  if the user is on the C: drive  when they type A:GO, it
+will look on the A: drive.
+
+The -D parameter, however, tells GO  to look in the current directory.   This
+lets you use a single copy  of GO to support many directories.   For example,
+your batch file might look like this:
+
+
+
+
+
+
+
+                                      16
+
+   ECHO OFF
+   REM Batch file placed in the root directory of the diskette
+   A:
+   :AGAIN
+   CLS
+   CD \
+   GO-MENU MAXI.MNU
+   IF ERRORLEVEL 4 CD \GAMES
+   IF ERRORLEVEL 5 CD \MISC
+   CLS
+   \GO.EXE -D
+   IF ERRORLEVEL 10 GOTO END
+   GOTO AGAIN
+   :END
+
+
+The line:
+
+   \GO.EXE -D
+
+Executes  the GO program  in the root  directory.  The  -D parameter, though,
+tells it to look for archives in the current directory.
+
+Note also the line:
+
+   IF ERRORLEVEL 10 GOTO END
+
+If  GO  ends because  a  program  was just  installed,  it will  set  the DOS
+Errorlevel to 10.  This lets you break out of the batch file.
+
+The batch file above  is simplified for clarity.  A  more complete batch file
+is presented on our Maxi-Collection diskette.
+
+
+
+The GO.HDG File
+---------------
+
+
+NOTE: In order  to protect our copyright,  we restrict the use  of the GO.HDG
+      file to registered copies of GO.
+
+
+In the sample  batch file shown previously, the user  could "navigate" to the
+\GAMES  and \MISC directories.  It would be  nice if, when the GO program was
+called,  it would replace the title line  (which is normally just a copyright
+message) with a title like:  GAMES SECTION, or MISCELLANEOUS PROGRAMS.
+
+If GO sees a  standard text file named GO.HDG  in the directory, it  will use
+first line from the file as the title of the main menu screen.
+
+By using a combination of GO-MENU, GO -D and GO.HDG, you can create a "guided
+tour" of all your software products!
+
+
+
+                                      17
+
+                                --------------
+                                Hints and Tips
+                                --------------
+
+
+
+Specifying GO-COPY File Names
+-----------------------------
+
+
+When you specify  files in GO-COPY.COP, don't include the  drive letter.  For
+example, if you list a file like this:
+
+   A:\DATA\INVOICE.DAT
+
+GO-COPY  will  always look  at  the A:  drive  for that  directory  and file.
+However, if you specify it this way:
+
+   \DATA\INVOICE.DAT
+
+GO-COPY will look on whatever  drive GO-COPY itself is  on.  This is  usually
+the A: drive, but this will let the user run GO-COPY from any drive.
+
+
+
+Renaming Copy Files
+-------------------
+
+
+The files  listed in GO-COPY.COP or GO-DISKS.DSK can be copied to a file with
+a  different name.  Simply specify the new  name after the name of the source
+file.  For example:
+
+   \MYPROG\TEST.EXE PROGRAM.EXE
+
+This feature  can not be  used with  wildcards.  For  example, the  following
+lines would NOT be valid:
+
+   \BAD\*.EXE NAUGHTY.EXE
+
+   \BAD\*.DOG *.CAT
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                      18
+
+                       -------------------------------
+                       Other Programs Included with GO
+                       -------------------------------
+
+
+
+The following  programs are also included  with GO.   We've found them  to be
+quite  useful in  packaging  software.    Please  see  the  section  entitled
+"Versions and Registration"  for information about the  distribution of these
+programs.
+
+
+
+SEE
+---
+
+
+The  SEE  program displays  (and optionally  prints) a  text  file.   We have
+included it as a document viewer for this manual.  You may find it useful for
+your own applications.
+
+The format for SEE is:
+
+   SEE <file name>
+
+For example:
+
+   SEE MYFILE.TXT
+
+For complete instructions, enter this command:
+
+   SEE /?
+
+SEE is a freeware program.  A more sophisticated shareware file viewer is the
+LIST program created by Vernon Buerg, which we recommend highly.  Contact Mr.
+Buerg for licensing details.
+
+
+
+GO_SMALL
+--------
+
+
+This is a compressed  copy of the GO.EXE program.  We  recommend that you use
+an EXE file compressor before you put your copy of GO onto the diskette; this
+leaves more  room  for  software.    If you  don't  have  access  to  an  EXE
+compressor, you can copy GO_SMALL.EXE to your diskette as GO.EXE.
+
+GO_SMALL  is a  copy of  GO.EXE that  was compressed  with the  DIET program.
+Since it is  compressed, you can  not modify it  as described in the  section
+"Doing it  the Hard Way".   If you want  to apply modifications, you  must do
+them to an uncompressed copy of GO.EXE.
+
+Another popular EXE compressor is PKLITE from PKWare.
+
+
+                                      19
+
+
+READING
+-------
+
+
+The READING.EXE program displays  the message "Reading Disk...".   This gives
+the  user something to  look at while  jumping from  place to place  in batch
+files, which are notoriously slow when run from diskettes.
+
+
+
+SETERR
+------
+
+
+SETERR sets the DOS Errorlevel to the specified number.   The format for this
+command is:
+
+   SETERR <number>
+
+For example:
+
+   SETERR 25
+
+SETERR is used in batch files.
+
+
+
+WAITBLK
+-------
+
+
+The  WAITBLK  program  is  a batch-file  utility  which  lets  you  create an
+alternative to GO-DISKS  processing (described earlier).   WAITBLK will  wait
+for a blank diskette to be inserted into the specified drive.
+
+For details, enter the DOS command:  WAITBLK ?
+
+WAITBLK is not compatible with XT and PC machines.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                      20
+
+                          -------------------------
+                          Versions and Registration
+                          -------------------------
+
+
+
+Changes Between Versions
+------------------------
+
+
+If  you're curious about what has changed between  versions, or if you have a
+problem and  think it might be caused by an upgrade incompatibility, refer to
+the version history file by entering the following command at the DOS prompt:
+
+   SEE CHANGE.LOG
+
+
+
+Free Usage of GO Programs
+-------------------------
+
+
+You are  entitled to  use the GO  program to distribute  your software.   You
+don't have to pay  a penny for the privilege!   For full details, run  the GO
+program  that  comes  with  this  package  and  review  the  article  in  the
+Information section entitled "How to Register Your Copy of GO".
+
+Why do we allow people to use our program without paying for it?  Because all
+unregistered copies of GO contain our advertising screen (i.e. the "About GO"
+selection on  the main menu).  Thus, by passing around unregistered copies of
+GO, you are helping us advertise.  Everybody wins!
+
+As for the programs GO-DISKS,  GO-COPY, GO-MENU, you are welcome to  use them
+without registering, but only in conjunction with our GO program.  That is to
+say, you  may not  distribute a  diskette  containing one  of these  programs
+unless:
+
+   (A) You are a registered owner of GO, or ...
+   (B) An unregistered GO program also appears on diskette.
+
+The programs  SEE, READING, SETERR and  WAITBLK may be sold,  traded or given
+away, but may not be modified in any way.
+
+
+
+Ordering Upgrades to GO
+-----------------------
+
+
+If  you have  already registered a  copy of GO  and would like  to register a
+newer version, all further GO  orders are available from Pinnacle at  25% off
+the prices indicated on the order form.  
+
+
+
+
+                                      21
+
+Standard Discount
+
+
+If you have registered more than $40 worth of software from Pinnacle, you are
+entitled to $10  off any  future single-product registration  priced at  over
+$40.
+
+
+
+Thank-You!
+----------
+
+
+If  you're trying  GO for  the first time,  we'd like  to thank  you for your
+interest in our product, and for taking the time to evaluate it.
+
+If you're  a registered owner,  or you're planning  on ordering  a registered
+copy, we thank you  for supporting the  shareware concept; it's your  support
+that  makes  it  possible   for  shareware  authors  to   continue  producing
+affordable, quality software!
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                      22
+
+                                    -----
+                                    Index
+                                    -----
+
+               Can't find it here?  Try the Table of Contents.
+
+
+.GO  9
+;INST  5, 9
+;NEW  4
+1.4 Meg  13
+360K  13
+A:  2, 3, 16, 18
+About "GO"  3
+Advertising  21
+ANSI  4
+ARC  ii, 4
+ARCE  ii, 2, 4
+Archive  2, 4, 16
+Arrow keys  3
+ASCII  4
+   12  4
+AT  15
+Author  1
+B:  3
+Batch  1, 16, 17, 20
+Blank  1
+Buerg  ii, 19
+BW80  4
+C:  16
+CHANGE.LOG  21
+Color  4, 7
+Command-line  6
+Comment  16
+Compress  1, 19
+Compressor  19
+COP  14
+Copy  1, 14
+COPYQM  ii, 15
+Copyright  1, 3, 17
+Ctrl-L  4
+Ctrl-P  4
+Curious  21
+Dearchive  3
+Dearchiving  2
+Dearchiving Method  6
+Dearchiving program  5
+DEBUG  6
+DIET  ii, 19
+DIR  8
+Directory  2-4, 16
+Discount  22
+Diskette  1, 2, 15
+Distribution  2
+DOC  5
+
+                                      23
+
+Documentation  3
+DOS
+   Errorlevel  1, 17, 20
+   Shell  2, 5
+Drive  2, 15, 16, 18
+Easier  2
+END  14
+Enter  3
+Errorlevel  1, 17, 20
+EXE  8, 19
+File  2
+File name  9
+Form Feed  4
+FORMATQM  ii, 15
+Free  21
+Freeware  ii, 19
+Function keys  3
+GO  1, 2, 16
+GO.EXE  6, 19
+GO.HDG  17
+GO-COPY  1, 14, 15, 21
+GO-COPY.COP  14, 18
+GO-DISKS  1, 15, 20, 21
+GO-DISKS.DSK  15, 18
+GO-FORM.DAT  3
+GO-MENU  1, 16
+GO-MENU.MNU  16
+GO-STRT.DAT  7
+GO_SMALL  1, 19, 21
+Guided tour  17
+Help  4
+HELPME  3, 7
+Incompatibility,  21
+Information  3, 8, 9
+INST  5, 9
+Install  2-4, 8, 9
+LHARC  ii, 2
+Line-drawing  8
+LIST  ii, 7, 19
+LST  3, 8, 9
+LZH  1, 2
+Main menu  3, 4, 7, 9, 14, 17, 21
+Matsumoto  ii
+Maxi-Collection  16, 17
+Menu  1, 3, 4, 8, 16
+MODE  4
+Modifications,  19
+Modify  8
+Monitor  4, 7
+Monochrome  4, 7
+Multi-disk  10
+NAMe  12
+NEW  4
+NEWDisk  13
+NEWFile  13
+
+                                      24
+
+Novice  2
+Obsolete
+   Dearchiver  5
+Packaging  19
+PAK  2
+Parameter  6, 7, 16
+PATH  5
+PC  15, 20
+Personalized  3
+PKLITE  ii, 19
+PKUNZIP  ii, 2, 4
+PKWare  ii
+PKWare.  19
+PKZIP  2
+Print  1, 8, 19
+Print reply form  3
+Problem  21
+QEdit  4
+Quit  3
+READ.ME  5
+READING  1, 20, 21
+Register  6, 21
+Registered  21
+Renaming  18
+Reply  1, 3
+Root  17
+S-D  3, 8, 9
+Sample  15, 16
+SEA  ii
+SEE  1, 3, 7, 19, 21
+Semi-colon  16
+SENDto  12
+SETERR  1, 20, 21
+Shareware  ii, 2, 16, 19
+Shell  2, 5
+Special characters  8
+STARt  12
+Sydex  ii, 15
+Text editor  3
+Text file  3, 9, 14, 17, 19
+THISdisk  12
+Title  17
+Trademark  ii
+TSRs  14
+TXT  3, 8, 9
+Unregistered  3, 21
+Upgrade  21
+Upgrades  21
+Versions  21
+View  1, 19
+WAITBLK  1, 20, 21
+Wildcards  14, 18
+WordStar  4
+XT  15, 20
+Yoshi  ii
+
+                                      25
+
+Zap  6
+ZIP  1, 2, 4
+ZOO  2
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                      26
+

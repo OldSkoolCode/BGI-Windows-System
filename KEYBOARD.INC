@@ -1,0 +1,61 @@
+;{----------------------------------------------------------------------}
+;{	keyboard.inc keyboard device interface definitions		}
+;{	COPYRIGHT 1989 Monarch Development				}
+;{----------------------------------------------------------------------}
+
+		ifndef	EQUATESINC
+		include	equates.inc
+		endif
+
+KEYBOARDINC	equ	1
+
+		ifndef	DOSINC
+		include	dos.inc
+		endif
+
+		ifndef	EVENTSINC
+		include	events.inc
+		endif
+
+;
+; -----	device equates
+;
+
+KEYBDIO		equ	60h
+KEYBDRS		equ	61h
+KEYBSTATUS	equ	64h
+
+;
+; ----- Keyboard device bits
+;
+KEYBOARDPRESS	equ	1
+KEYBOARDRELEASE	equ	2
+
+;
+; -----	keyboard scan code keys
+;
+ESCAPEKEY	equ	1bh
+ENTERKEY	equ	0dh
+TABKEY		equ	09h
+BACKSPCKEY	equ	08h
+HOMEKEY		equ	4700h
+UPARKEY		equ	4800h
+PGUPKEY		equ	4900h
+LEFTARKEY	equ	4b00h
+KEYPAD5		equ	4c00h
+RIGHTARKEY	equ	4d00h
+ENDKEY		equ	4f00h
+DOWNARKEY	equ	5000h
+PGDNKEY		equ	5100h
+INSKEY		equ	5200h
+DELKEY		equ	5300h
+
+
+;
+; -----	global definitions
+;
+		global	lastkey:word,installkeybd:far
+		global	uninstallkeybd:far,inkey:word
+		global	setKeySwitch:far,getKeySwitch:far
+		global	getbitmapkey:far
+

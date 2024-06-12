@@ -1,0 +1,55 @@
+head	1.1;
+access;
+symbols;
+locks
+	KENH:1.1; strict;
+comment	@# @;
+
+
+1.1
+date	93.04.23.21.53.52;	author KENH;	state Exp;
+branches;
+next	;
+
+
+desc
+@@
+
+
+1.1
+log
+@Initial revision
+@
+text
+@		ifndef objectinc
+		include	object.inc
+		endif
+
+MENUINC		equ	1
+
+		ifndef mouseinc
+		include mouse.inc
+		endif
+
+		ifndef KEYBOARDINC
+		include	keyboard.inc
+		endif
+
+;
+; -----	menu device messages
+;
+MENUSELECT	equ	1
+MENUDESELECT	equ	2
+MENUMOUSEMOVE	equ	3
+MENUITEMSELECT	equ	4
+MENUITEMDESELECT equ	5
+MENUITEMRELEASE	equ	6
+
+;
+; -----	global definitions
+;
+
+		global	drawMenuBar:far, freeMenu:far
+		global	_drawMenuBar:far, _freeMenu:far
+		global	mBarXPos:word, mBarYPos:word, mBarPtr:dword
+@

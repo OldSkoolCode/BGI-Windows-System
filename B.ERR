@@ -1,0 +1,91 @@
+MAKE Version 3.6  Copyright (c) 1992 Borland International
+
+Available memory 7278016 bytes
+
+        tasm /m /zi memory.asm
+Turbo Assembler  Version 3.1  Copyright (c) 1988, 1992 Borland International
+
+Assembling file:   memory.asm
+**Error** memory.asm(162) Symbol redefined or moved between passes: @@MEMDONE
+**Error** memory.asm(171) Symbol redefined or moved between passes: INITEXIT
+**Error** memory.asm(184) Symbol redefined or moved between passes: SORTGREN
+**Error** memory.asm(198) Symbol redefined or moved between passes: COMPARERTN
+**Error** memory.asm(199) Symbol redefined or moved between passes: ITEMSIZE
+**Error** memory.asm(200) Symbol redefined or moved between passes: BASEPTR
+**Error** memory.asm(212) Symbol redefined or moved between passes: SHELLSORT
+**Error** memory.asm(224) Symbol redefined or moved between passes: @@GAPLOOP
+**Error** memory.asm(227) Symbol redefined or moved between passes: @@ILOOP
+**Error** memory.asm(230) Symbol redefined or moved between passes: @@JLOOP
+**Error** memory.asm(259) Symbol redefined or moved between passes: @@2
+**Error** memory.asm(268) Symbol redefined or moved between passes: @@NEXTJ
+**Error** memory.asm(271) Symbol redefined or moved between passes: @@NEXTI
+**Error** memory.asm(273) Symbol redefined or moved between passes: @@CHECKILOOP
+**Error** memory.asm(277) Symbol redefined or moved between passes: @@CHECKGAPLOOP
+**Error** memory.asm(297) Symbol redefined or moved between passes: CHECKPRIORITY
+**Error** memory.asm(316) Symbol redefined or moved between passes: SORTRTNS
+**Error** memory.asm(323) Symbol redefined or moved between passes: @@1
+**Error** memory.asm(331) Symbol redefined or moved between passes: @@2
+**Error** memory.asm(340) Symbol redefined or moved between passes: @@EXITSR
+**Error** memory.asm(346) Symbol redefined or moved between passes: PARM1
+**Error** memory.asm(347) Symbol redefined or moved between passes: PARM2
+**Error** memory.asm(359) Symbol redefined or moved between passes: EXECUTERTNS
+**Error** memory.asm(372) Symbol redefined or moved between passes: @@1
+**Error** memory.asm(383) Symbol redefined or moved between passes: @@NOTDEVICE
+**Error** memory.asm(409) Symbol redefined or moved between passes: @@NEXTRTN
+**Error** memory.asm(412) Symbol redefined or moved between passes: @@2
+**Error** memory.asm(414) Symbol redefined or moved between passes: EXRTEXIT
+**Error** memory.asm(433) Symbol redefined or moved between passes: MEMCPY
+**Error** memory.asm(453) Symbol redefined or moved between passes: @@FORWARDMOVE
+**Error** memory.asm(459) Symbol redefined or moved between passes: @@BACKWARDMOVE
+**Error** memory.asm(472) Symbol redefined or moved between passes: @@MECPEXIT
+**Error** memory.asm(483) Symbol redefined or moved between passes: SPLITMEM
+**Error** memory.asm(508) Symbol redefined or moved between passes: @@1
+**Error** memory.asm(524) Symbol redefined or moved between passes: UNSPLITMEM
+**Error** memory.asm(547) Symbol redefined or moved between passes: @@1
+**Error** memory.asm(559) Symbol redefined or moved between passes: @@2
+**Error** memory.asm(577) Symbol redefined or moved between passes: MSHRINK
+**Error** memory.asm(594) Symbol redefined or moved between passes: @@1
+**Error** memory.asm(602) Symbol redefined or moved between passes: @@2
+**Error** memory.asm(606) Symbol redefined or moved between passes: MSHRINKEXIT
+**Error** memory.asm(622) Symbol redefined or moved between passes: FINDOLDMEM
+**Error** memory.asm(638) Symbol redefined or moved between passes: @@1
+**Error** memory.asm(653) Symbol redefined or moved between passes: @@2
+**Error** memory.asm(658) Symbol redefined or moved between passes: @@3
+**Error** memory.asm(661) Symbol redefined or moved between passes: FOMEXIT
+**Error** memory.asm(680) Symbol redefined or moved between passes: MALLOC
+**Error** memory.asm(696) Symbol redefined or moved between passes: @@1
+**Error** memory.asm(707) Symbol redefined or moved between passes: @@2
+**Error** memory.asm(715) Symbol redefined or moved between passes: @@2A
+**Error** memory.asm(725) Symbol redefined or moved between passes: @@3
+**Error** memory.asm(731) Symbol redefined or moved between passes: MALLOCEXIT
+**Error** memory.asm(749) Symbol redefined or moved between passes: MFREE
+**Error** memory.asm(764) Symbol redefined or moved between passes: @@0
+**Error** memory.asm(773) Symbol redefined or moved between passes: @@1
+**Error** memory.asm(780) Symbol redefined or moved between passes: @@2
+**Error** memory.asm(787) Symbol redefined or moved between passes: @@3
+**Error** memory.asm(791) Symbol redefined or moved between passes: MFREEEXIT
+**Error** memory.asm(806) Symbol redefined or moved between passes: MFREEALL
+**Error** memory.asm(817) Symbol redefined or moved between passes: @@1
+**Error** memory.asm(833) Symbol redefined or moved between passes: CTRLCINT
+**Error** memory.asm(844) Symbol redefined or moved between passes: @@1
+**Error** memory.asm(846) Symbol redefined or moved between passes: @@2
+**Error** memory.asm(854) Symbol redefined or moved between passes: @@NOACTION
+**Error** memory.asm(864) Symbol redefined or moved between passes: EXITINT
+**Error** memory.asm(898) Symbol redefined or moved between passes: @@1
+**Error** memory.asm(900) Symbol redefined or moved between passes: @@2
+**Error** memory.asm(931) Symbol redefined or moved between passes: _EXITPROG
+**Error** memory.asm(933) Symbol redefined or moved between passes: _EXITTEXT
+**Error** memory.asm(947) Symbol redefined or moved between passes: SETEXITRTN
+**Error** memory.asm(965) Symbol redefined or moved between passes: CLEANUP
+**Error** memory.asm(974) Symbol redefined or moved between passes: CLUPEXIT
+**Error** memory.asm(984) Symbol redefined or moved between passes: SETCTRLCVECTOR
+**Error** memory.asm(1008) Symbol redefined or moved between passes: _MYFARMALLOC
+**Error** memory.asm(1035) Symbol redefined or moved between passes: _MYFARFREE
+*Warning* memory.asm(1060) Module is pass dependent - compatibility pass was done
+Error messages:    75
+Warning messages:  1
+Passes:            2
+Remaining memory:  304k
+
+
+** error 1 ** deleting memory.obj

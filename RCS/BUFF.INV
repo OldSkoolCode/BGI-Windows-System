@@ -1,0 +1,48 @@
+head	1.1;
+access;
+symbols;
+locks
+	KENH:1.1; strict;
+comment	@# @;
+
+
+1.1
+date	93.04.23.21.54.37;	author KENH;	state Exp;
+branches;
+next	;
+
+
+desc
+@@
+
+
+1.1
+log
+@Initial revision
+@
+text
+@;{----------------------------------------------------------------------}
+;{	BUFF.inc double buffering include file				}
+;{	COPYRIGHT 1989 Monarch Development				}
+;{----------------------------------------------------------------------}
+
+		ifndef	equatesinc
+		include	equates.inc
+		endif
+
+buffinc		equ	1
+
+		ifndef	grafinc
+		include	graf.inc
+		endif
+
+;
+; -----	global definitions
+;
+
+		global	initbuffering:far,pageflip:far
+		global	enablebuffering:far,disablebuffering:far
+		global	pic2seg:word
+
+
+@
